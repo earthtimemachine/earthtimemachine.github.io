@@ -1,14 +1,34 @@
 # Earth Time Machine
 
-See any place on Earth change over time — free.
+Pick any place on Earth and see it from every side, on one map that stays put while you switch views.
 
-- Home: https://earthtimemachine.github.io/
-- Daily view (NASA, every day): https://earthtimemachine.github.io/daily.html
-- Hi-res history (Esri, Sentinel-2, Landsat): https://earthtimemachine.github.io/hires.html
-- History & geology: https://earthtimemachine.github.io/history.html
-- Resources & mining: https://earthtimemachine.github.io/resources.html
-- Explore (sights, food, stays): https://earthtimemachine.github.io/explore.html
-- Local news: https://earthtimemachine.github.io/news.html
-- Hazards & air: cyclones, heat, floods, fires, air quality: https://earthtimemachine.github.io/hazards.html
+**Open it:** https://earthtimemachine.github.io
 
-Imagery & data: NASA GIBS/EOSDIS, Esri World Imagery Wayback, EOX Sentinel-2 cloudless, Sentinel-2 and Landsat via Microsoft Planetary Computer, GDACS (cyclones), Open-Meteo (forecasts), OpenStreetMap (search), historical-basemaps by A. Ourednik (GPL-3.0, simplified copies in data/hist), PB2002 plates by P. Bird via fraxen/tectonicplates (ODC-By), GDELT Project (news), Wikipedia/Wikidata, Macrostrat (CC BY 4.0), GPlates Web Service.
+## Views (lenses)
+
+| Lens | What it shows |
+|---|---|
+| Overview | Weather and air now, top alerts, latest Sentinel-2 pass, rulers through time, main crops, notable places, local headlines |
+| Imagery | NASA daily (VIIRS/MODIS), Sentinel-2 (10 m, since 2016), Esri Wayback aerial photos (since 2014), Landsat (since 1984). Swipe-compare and time-lapse |
+| Hazards | Cyclones (GDACS), IMD-style heat waves, heavy rain and flash floods, river floods (GloFAS), wildfires, air quality (CAMS), 16-day outlook |
+| History | Who ruled the place across 2,000+ years with currency and capital, tectonic plate, the rock beneath, and where the land drifted (GPlates) |
+| Economy | Top crops, services, manufacturing, universities, mines and quarries |
+| Explore | Sights, restaurants (vegetarian filter) and places to stay |
+| News | Local news (GDELT) newest first, ending on the selected or compared date |
+
+The place, map view and dates are shared across lenses and kept in the link, so any view can be shared with the link button.
+
+## Layout
+
+- `index.html` — home page
+- `app.html` — the app shell; `css/app.css` design system
+- `js/core.js` (state, events, fetch), `js/map.js` (map and layers), `js/shell.js` (tabs, search, mobile sheet)
+- `js/lenses/*.js` — one module per lens
+- `data/` — simplified historical borders and plate boundaries; `vendor/` — Leaflet and Esri Wayback core
+- `daily.html`, `hires.html`, `hazards.html`, `history.html`, `resources.html`, `explore.html`, `news.html` — redirects from the old pages
+
+No build step: plain ES modules served by GitHub Pages.
+
+## Data sources
+
+NASA GIBS, Microsoft Planetary Computer, Esri World Imagery and Wayback, Open-Meteo (forecast, archive, flood, air quality, elevation), GDACS, historical-basemaps (GPL-3.0), PB2002 plates, Macrostrat, GPlates Web Service, Wikipedia and Wikidata, OpenStreetMap (Nominatim, Overpass), GDELT.

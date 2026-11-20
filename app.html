@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Earth Time Machine</title>
+<meta name="description" content="One map, every perspective: satellite imagery through time, hazards, history, economy, places and local news for any spot on Earth.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="hdr">
+  <a class="brand" href="./" title="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><circle cx="12" cy="12" r="9.5" stroke="#4fb3bf"/><path d="M3 12h18M12 2.5c3 3 3 16 0 19M12 2.5c-3 3-3 16 0 19" stroke="#4fb3bf"/><path d="M12 7v5l3 2" stroke="#e3b964" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Earth Time Machine</span>
+  </a>
+  <div class="search" role="search">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4" stroke-linecap="round"/></svg>
+      <input id="q" type="search" autocomplete="off" placeholder="Search a place or paste coordinates" aria-label="Search a place">
+      <button class="icon-btn" id="locate" type="button" title="Use my location" aria-label="Use my location">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>
+      </button>
+    </div>
+    <div class="results hidden" id="results" role="listbox"></div>
+  </div>
+  <div class="hdr-right">
+    <span class="spinner" id="spinner" aria-hidden="true"></span>
+    <button class="icon-btn" id="share" type="button" title="Copy link to this view" aria-label="Copy link to this view">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="map"></div>
+
+<aside class="panel" id="panel" aria-label="Details">
+  <div class="grab" id="grab" title="Drag to resize"></div>
+  <nav class="lens-tabs" id="lensTabs" aria-label="Perspectives"></nav>
+  <div class="place-bar">
+    <div class="txt"><h1 id="placeName">Pick a place</h1><div class="sub" id="placeSub">Search above, use your location, or tap the map.</div></div>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</aside>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/wayback.js"></script>
+<script type="module" src="js/shell.js"></script>
+</body>
+</html>

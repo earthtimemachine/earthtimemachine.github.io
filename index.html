@@ -7,7 +7,7 @@
 <meta name="description" content="Pick any place on Earth and see it from every side: daily satellite images, sharp history, hazards, rulers through time, resources, things to do and local news.">
 <script>
   /* old links to the daily view used the home address with a #location: send them on */
-  if(/(^|[#&])(c|d|p|l)=/.test(location.hash)) location.replace('daily.html' + location.hash);
+  if(/(^|[#&])(c|d|p|l)=/.test(location.hash)) location.replace('app.html' + location.hash);
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -106,7 +106,7 @@ footer a{color:var(--lagoon)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5" stroke="#4fb3bf"/><path d="M3 12h18M12 2.5c3 3 3 16 0 19M12 2.5c-3 3-3 16 0 19" stroke="#4fb3bf"/><path d="M12 7v5l3 2" stroke="#e3b964" stroke-width="2" stroke-linecap="round"/></svg>
     <span>Earth Time Machine</span>
   </a>
-  <nav id="nav"><a href="./" class=on>🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a><a href="resources.html">⛏ Resources<span class="full"> &amp; mining</span></a><a href="explore.html">🍽 Explore<span class="full"> &amp; food</span></a><a href="news.html">📰 News</a></nav><script>try{var a=document.querySelector("#nav a.on"),n=document.getElementById("nav");n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.clientWidth/2;}catch(e){}</script>
+  <nav id="nav"><a href="./" class=on>Home</a><a href="app.html">Open the map</a></nav><script>try{var a=document.querySelector("#nav a.on"),n=document.getElementById("nav");n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.clientWidth/2;}catch(e){}</script>
 </header>
 
 <section class="hero">
@@ -135,43 +135,43 @@ footer a{color:var(--lagoon)}
   <h2 id="lensTitle">Choose how to look at it</h2>
   <p class="sub" id="lensSub">Search a place first, or open any view and tap the map. Every view remembers the place you picked.</p>
   <div class="lenses">
-    <a class="lens" href="daily.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M3 4l4 4M21 20l-4-4M9 12H4M20 12h-5"/><path d="M4 9v6M20 9v6"/></svg>
-      <span class="ln-name">Daily view</span>
-      <span class="ln-what">The planet as NASA satellites saw it each day. Step day by day or week by week, and play a time-lapse of one spot.</span>
-      <span class="ln-go">Open your place in Daily view</span>
+    <a class="lens" href="app.html#lens=overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+      <span class="ln-name">Overview</span>
+      <span class="ln-what">One page on the place: weather and air right now, the top alerts, its latest satellite pass, who ruled it, what it grows and today's local headlines.</span>
+      <span class="ln-go">Open your place in Overview</span>
     </a>
-    <a class="lens" href="hires.html">
+    <a class="lens" href="app.html#lens=imagery">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8" stroke-linecap="round"/><path d="M8 11.5l2-2 2 2 1.5-1.5"/></svg>
-      <span class="ln-name">Hi-res history</span>
-      <span class="ln-what">Sharp images to watch buildings, ports and fields change: aerial photos back to 2014, Sentinel-2 every few days, Landsat to 1984.</span>
-      <span class="ln-go">Open your place in Hi-res history</span>
+      <span class="ln-name">Satellite imagery</span>
+      <span class="ln-what">Watch the spot change: NASA pictures every day, Sentinel-2 every few days at 10 m, sharp aerial photos back to 2014 and Landsat to 1984. Compare two dates with a swipe or play a time-lapse.</span>
+      <span class="ln-go">Open your place in Satellite imagery</span>
     </a>
-    <a class="lens" href="hazards.html">
+    <a class="lens" href="app.html#lens=hazards">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M12 4c-5 0-8 3-8 6M20 12c0 5-3 8-6 8M12 20c5 0 8-3 8-6M4 12c0-5 3-8 6-8"/></svg>
       <span class="ln-name">Hazards and air</span>
       <span class="ln-what">Cyclones heading its way, heat waves, river floods and flash floods, wildfires and air quality, with a 16-day outlook.</span>
       <span class="ln-go">Open your place in Hazards</span>
     </a>
-    <a class="lens" href="history.html">
+    <a class="lens" href="app.html#lens=history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 4h11a2 2 0 0 1 2 2v11"/><path d="M6 4a2 2 0 0 0-2 2v1h4V6a2 2 0 0 0-2-2z"/><path d="M8 7v11a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-1H12"/><path d="M11 10h5M11 13h5"/></svg>
       <span class="ln-name">History and geology</span>
       <span class="ln-what">Who ruled it, from the Mauryas to today, with their currency and capital. Plus the rock beneath it and where the land drifted over 500 million years.</span>
       <span class="ln-go">Open your place in History</span>
     </a>
-    <a class="lens" href="resources.html">
+    <a class="lens" href="app.html#lens=economy">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l9-9"/><path d="M12 4c3 0 6 2 8 5-3-1-6-1-9 1"/><path d="M16 20h4M3 20h6"/></svg>
-      <span class="ln-name">Resources and economy</span>
+      <span class="ln-name">Economy and resources</span>
       <span class="ln-what">Its main crops, service industries, factories and universities, plus nearby mines and quarries and what the local rock yields.</span>
-      <span class="ln-go">Open your place in Resources</span>
+      <span class="ln-go">Open your place in Economy</span>
     </a>
-    <a class="lens" href="explore.html">
+    <a class="lens" href="app.html#lens=explore">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v5a2 2 0 0 0 2 2M9 3v5a2 2 0 0 1-2 2"/><path d="M17 21V3c-2 1-3 4-3 7a3 3 0 0 0 3 3"/></svg>
       <span class="ln-name">Explore</span>
       <span class="ln-what">Sights worth seeing, restaurants and cafés with a vegetarian filter, and places to stay, each with a link to reviews.</span>
       <span class="ln-go">Open your place in Explore</span>
     </a>
-    <a class="lens" href="news.html">
+    <a class="lens" href="app.html#lens=news">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5" width="14" height="15" rx="1.5"/><path d="M17 9h3v9a2 2 0 0 1-2 2"/><path d="M6.5 9h7M6.5 12.5h7M6.5 16h4"/></svg>
       <span class="ln-name">Local news</span>
       <span class="ln-what">Stories from the area's own newspapers, newest first, ending on any date you pick. Filter by weather, farming, business, civic or crime.</span>
@@ -183,10 +183,10 @@ footer a{color:var(--lagoon)}
     <h2>Places to try</h2>
     <p class="sub">Each one opens on a view that shows something worth seeing there.</p>
     <div class="examples">
-      <button class="ex" data-lat="15.0192" data-lng="80.0525" data-z="13" data-name="Ramayapatnam Port" data-go="hires.html#c=15.01917,80.0525,13&p=15.01917,80.0525&src=s2s"><b>Ramayapatnam Port</b><span>A deep-sea port rising from an empty beach, pass by pass.</span></button>
-      <button class="ex" data-lat="17.4416" data-lng="78.3826" data-z="12" data-name="HITEC City, Hyderabad" data-go="hires.html#c=17.44155,78.38264,12&p=17.44155,78.38264&src=ls"><b>HITEC City, Hyderabad</b><span>Farmland to tech towers since the 1980s, in Landsat images.</span></button>
-      <button class="ex" data-lat="17.3616" data-lng="78.4747" data-z="7" data-name="Charminar, Hyderabad" data-go="history.html#c=17.36,78.47,6&p=17.3616,78.4747"><b>Old Hyderabad</b><span>Golconda, the Mughals, the Nizams and the Raj, one ruler at a time.</span></button>
-      <button class="ex" data-lat="16.5" data-lng="82.2" data-z="6" data-name="Andhra coast" data-go="hazards.html#c=16.5,82.2,6&p=16.5,82.2"><b>Andhra coast</b><span>Cyclone tracks, river levels and heat-wave days for the next two weeks.</span></button>
+      <button class="ex" data-lat="15.0192" data-lng="80.0525" data-z="13" data-name="Ramayapatnam Port" data-go="app.html#lens=imagery&p=15.01917,80.0525&c=15.01917,80.0525,14&src=s2"><b>Ramayapatnam Port</b><span>A deep-sea port rising from an empty beach, pass by pass.</span></button>
+      <button class="ex" data-lat="17.4416" data-lng="78.3826" data-z="12" data-name="HITEC City, Hyderabad" data-go="app.html#lens=imagery&p=17.44155,78.38264&c=17.44155,78.38264,13&src=landsat"><b>HITEC City, Hyderabad</b><span>Farmland to tech towers since the 1980s, in Landsat images.</span></button>
+      <button class="ex" data-lat="17.3616" data-lng="78.4747" data-z="7" data-name="Charminar, Hyderabad" data-go="app.html#lens=history&p=17.3616,78.4747&c=17.36,78.47,6"><b>Old Hyderabad</b><span>Golconda, the Mughals, the Nizams and the Raj, one ruler at a time.</span></button>
+      <button class="ex" data-lat="16.5" data-lng="82.2" data-z="6" data-name="Andhra coast" data-go="app.html#lens=hazards&p=16.5,82.2&c=16.5,82.2,6"><b>Andhra coast</b><span>Cyclone tracks, river levels and heat-wave days for the next two weeks.</span></button>
     </div>
   </section>
 </main>
@@ -223,6 +223,7 @@ function choose(p, opts={}){
   rec.unshift({name:p.name, lat:+p.lat, lng:+p.lng}); store.set('etm-recent', rec.slice(0,5));
   showPlace(p.name);
   if(opts.go) location.href = opts.go;
+  else if(opts.open) location.href = `app.html#lens=overview&p=${(+p.lat).toFixed(5)},${(+p.lng).toFixed(5)}`;
   else if(opts.scroll) document.querySelector('main').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
 }
 function showPlace(name){
@@ -256,7 +257,7 @@ function showResults(list){
   if(!list.length){ box.innerHTML='<button type="button" disabled>No places found. Try a nearby town or check the spelling.</button>'; box.style.display='block'; return; }
   box.innerHTML = list.map((it,i)=>{ const parts=it.display_name.split(','); return `<button type="button" role="option" data-i="${i}">${esc(parts[0])}<small>${esc(parts.slice(1).join(',').trim())}</small></button>`; }).join('');
   box.style.display='block';
-  box.querySelectorAll('button[data-i]').forEach(b=> b.onclick=()=>{ const it=list[+b.dataset.i]; box.style.display='none'; const name=it.display_name.split(',')[0]; $('q').value=name; choose({name, lat:it.lat, lng:it.lon, z:12}, {scroll:true}); });
+  box.querySelectorAll('button[data-i]').forEach(b=> b.onclick=()=>{ const it=list[+b.dataset.i]; box.style.display='none'; const name=it.display_name.split(',')[0]; $('q').value=name; choose({name, lat:it.lat, lng:it.lon, z:12}, {open:true}); });
 }
 $('q').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('results').querySelector('button[data-i]'); if(f) f.click(); } if(e.key==='ArrowDown'){ const f=$('results').querySelector('button[data-i]'); if(f){ e.preventDefault(); f.focus(); } } });
 $('results').addEventListener('keydown', e=>{ const b=[...$('results').querySelectorAll('button[data-i]')], i=b.indexOf(document.activeElement);
@@ -270,7 +271,7 @@ $('loc').onclick = ()=>{
   navigator.geolocation.getCurrentPosition(async pos=>{
     const lat=pos.coords.latitude, lng=pos.coords.longitude; let name='My location';
     try{ const j=await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=14&accept-language=en&lat=${lat}&lon=${lng}`)).json(); const a=j.address||{}; name=a.suburb||a.village||a.town||a.city||a.county||name; }catch(e){}
-    choose({name, lat, lng, z:13}, {scroll:true});
+    choose({name, lat, lng, z:13}, {open:true});
   }, err=>{ $('status').textContent = err.code===1 ? 'Location access was turned off. Allow it in your browser settings, or search for your town.' : 'Your location could not be found. Search for your town instead.'; }, {enableHighAccuracy:false, timeout:12000});
 };
 
