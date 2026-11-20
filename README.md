@@ -8,6 +8,7 @@ See any place on Earth change over time — free.
 - History & geology: https://earthtimemachine.github.io/history.html
 - Resources & mining: https://earthtimemachine.github.io/resources.html
 - Explore (sights, food, stays): https://earthtimemachine.github.io/explore.html
+- Local news: https://earthtimemachine.github.io/news.html
 - Hazards & air: cyclones, heat, floods, fires, air quality: https://earthtimemachine.github.io/hazards.html
 
-Imagery & data: NASA GIBS/EOSDIS, Esri World Imagery Wayback, EOX Sentinel-2 cloudless, Sentinel-2 and Landsat via Microsoft Planetary Computer, GDACS (cyclones), Open-Meteo (forecasts), OpenStreetMap (search), historical-basemaps by A. Ourednik (GPL-3.0, simplified copies in data/hist), PB2002 plates by P. Bird via fraxen/tectonicplates (ODC-By), Wikipedia/Wikidata, Macrostrat (CC BY 4.0), GPlates Web Service.
+Imagery & data: NASA GIBS/EOSDIS, Esri World Imagery Wayback, EOX Sentinel-2 cloudless, Sentinel-2 and Landsat via Microsoft Planetary Computer, GDACS (cyclones), Open-Meteo (forecasts), OpenStreetMap (search), historical-basemaps by A. Ourednik (GPL-3.0, simplified copies in data/hist), PB2002 plates by P. Bird via fraxen/tectonicplates (ODC-By), GDELT Project (news), Wikipedia/Wikidata, Macrostrat (CC BY 4.0), GPlates Web Service.

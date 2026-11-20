@@ -751,8 +751,7 @@ details.sec>summary .muted{font-weight:400}
 #nav a{flex-shrink:0;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;font-weight:500;white-space:nowrap;color:#e8edf3;text-decoration:none}
 #nav a:hover{background:rgba(255,255,255,.12)}
 #nav a.on{background:#5ec8ff;border-color:#5ec8ff;color:#04121d;font-weight:700}
-@media (max-width:1100px){ #nav .full{display:none} }
-@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%;gap:4px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent);padding-right:18px} #nav a{padding:6px 9px;font-size:12.5px} }
+@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%;gap:4px} #nav a{padding:6px 8px;font-size:12.5px} #nav .full{display:none} }
 
 
 .chips{display:flex;gap:6px;flex-wrap:wrap;padding:2px 12px 10px}
@@ -781,7 +780,7 @@ details.sec>summary .muted{font-weight:400}
 <div id="map"></div>
 <header id="top">
   <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Sights, food & stays</small></div>
-  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a><a href="resources.html">⛏ Resources<span class="full"> &amp; mining</span></a><a href="explore.html" class=on>🍽 Explore<span class="full"> &amp; food</span></a></nav><script>try{var a=document.querySelector("#nav a.on"),n=document.getElementById("nav");n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.clientWidth/2;}catch(e){}</script>
+  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a><a href="resources.html">⛏ Resources<span class="full"> &amp; mining</span></a><a href="explore.html" class=on>🍽 Explore<span class="full"> &amp; food</span></a><a href="news.html">📰 News</a></nav><script>try{var a=document.querySelector("#nav a.on"),n=document.getElementById("nav");n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.clientWidth/2;}catch(e){}</script>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <span id="spin"></span>
 </header>
