@@ -809,6 +809,7 @@ input[type=date]{color-scheme:dark;font-family:ui-monospace,"SF Mono",Menlo,mono
   <div class="ctl" id="layerCtl">
     <select id="layer" title="Satellite layer"></select>
     <a class="btn sm" id="hiresBtn" href="hires.html" style="color:#ffd9a0;border-color:rgba(255,180,84,.5);text-decoration:none">🔍 Hi-res</a>
+    <a class="btn sm" id="hazBtn" href="hazards.html" style="color:#ffc9b0;border-color:rgba(255,122,69,.5);text-decoration:none">🌀 Cyclones & heat</a>
     <button class="btn sm on" id="lblBtn" title="Place names & borders">Labels</button>
     <button class="btn sm" id="cmpBtn" title="Side-by-side compare two dates">Compare</button>
     <span id="spin"></span>
@@ -1220,6 +1221,7 @@ function saveHash(){
   const hc = S.pin || c; h.set('c', `${hc.lat.toFixed(5)},${hc.lng.toFixed(5)},${S.pin ? Math.max(hz,16) : hz}`);
   if(S.pin) h.set('p', `${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}`);
   const hb = document.getElementById('hiresBtn'); if(hb) hb.href = 'hires.html#' + h.toString();
+  const zb = document.getElementById('hazBtn'); if(zb){ const zc = S.pin || c; zb.href = `hazards.html#c=${zc.lat.toFixed(4)},${zc.lng.toFixed(4)},${S.pin?6:Math.max(3,map.getZoom()+2)}` + (S.pin ? `&p=${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}` : ''); }
 }
 map.on('moveend', saveHash);
 
