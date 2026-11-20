@@ -803,7 +803,7 @@ input[type=date]{color-scheme:dark;font-family:ui-monospace,"SF Mono",Menlo,mono
 #nav a{flex-shrink:0;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;font-weight:500;white-space:nowrap;color:#e8edf3;text-decoration:none}
 #nav a:hover{background:rgba(255,255,255,.12)}
 #nav a.on{background:#5ec8ff;border-color:#5ec8ff;color:#04121d;font-weight:700}
-@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%} #nav a{padding:7px 10px} #nav .full{display:none} }
+@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%;gap:4px} #nav a{padding:6px 8px;font-size:12.5px} #nav .full{display:none} }
 </style>
 </head>
 <body>
@@ -811,7 +811,7 @@ input[type=date]{color-scheme:dark;font-family:ui-monospace,"SF Mono",Menlo,mono
 
 <header id="top">
   <div class="brand"><span class="dot"></span>Earth Time Machine <small>· NASA daily imagery</small></div>
-  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html" class=on>🛰 Daily</a><a id=navHires href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a></nav>
+  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a href="daily.html" class=on>🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a></nav>
   <div id="searchWrap">
     <input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off">
     <div id="results"></div>
@@ -1219,17 +1219,18 @@ let tT; function toast(msg){ const t = $('toast'); t.textContent = msg; t.classL
 function fitHeader(){ document.documentElement.style.setProperty('--hdr', $('top').offsetHeight + 'px'); }
 window.addEventListener('resize', ()=>{ fitHeader(); clip(); });
 
+/* shared view: every page remembers the same centre, zoom and pin, so switching tabs keeps you in place */
+const ETMV = { key:'etm-view',
+  save(lat,lng,z,pin){ try{ localStorage.setItem(this.key, JSON.stringify({lat:+lat, lng:+lng, z:+z, pin: pin ? [+pin.lat, +pin.lng] : null})); }catch(e){} },
+  load(){ try{ return JSON.parse(localStorage.getItem(this.key) || 'null'); }catch(e){ return null; } },
+  fromHash(){ const p = new URLSearchParams(location.hash.slice(1)); return p.get('c') || p.get('p'); } };
 function saveHash(){
   const c = map.getCenter(), p = new URLSearchParams();
   p.set('c', `${c.lat.toFixed(4)},${c.lng.toFixed(4)},${map.getZoom()}`); p.set('d', S.date); p.set('l', S.layer);
   if(S.pin) p.set('p', `${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}`);
   p.set('s', S.step); p.set('a', S.area);
   try{ history.replaceState(null, '', '#' + p.toString()); }catch(e){}
-  const h = new URLSearchParams(), hz = Math.min(19, Math.max(12, map.getZoom()+6));
-  const hc = S.pin || c; h.set('c', `${hc.lat.toFixed(5)},${hc.lng.toFixed(5)},${S.pin ? Math.max(hz,16) : hz}`);
-  if(S.pin) h.set('p', `${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}`);
-  const hb = document.getElementById('navHires'); if(hb) hb.href = 'hires.html#' + h.toString();
-  const zb = document.getElementById('navHaz'); if(zb){ const zc = S.pin || c; zb.href = `hazards.html#c=${zc.lat.toFixed(4)},${zc.lng.toFixed(4)},${S.pin?6:Math.max(3,map.getZoom()+2)}` + (S.pin ? `&p=${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}` : ''); }
+  ETMV.save(c.lat, c.lng, map.getZoom()+1, S.pin);
 }
 map.on('moveend', saveHash);
 
@@ -1237,6 +1238,7 @@ map.on('moveend', saveHash);
   fitHeader();
   $('date').value = S.date; $('dateB').value = S.dateB; $('endDate').value = S.end; $('area').value = S.area; $('step').value = S.step;
   let pin = null;
+  if(!ETMV.fromHash()){ const v = ETMV.load(); if(v){ map.setView([v.lat, v.lng], Math.max(1, Math.min(13, Math.round(v.z - 1)))); if(v.pin) pin = L.latLng(v.pin[0], v.pin[1]); } }
   try{
     const p = new URLSearchParams(location.hash.slice(1));
     if(p.get('l')) { S.layer = Math.min(LAYERS.length-1, +p.get('l')||0); $('layer').value = S.layer; layA.setParams({layers:L_().id}); layB.setParams({layers:L_().id}); }

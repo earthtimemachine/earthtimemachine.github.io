@@ -771,14 +771,14 @@ details.sec>summary .muted{font-weight:400}
 #nav a{flex-shrink:0;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;font-weight:500;white-space:nowrap;color:#e8edf3;text-decoration:none}
 #nav a:hover{background:rgba(255,255,255,.12)}
 #nav a.on{background:#5ec8ff;border-color:#5ec8ff;color:#04121d;font-weight:700}
-@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%} #nav a{padding:7px 10px} #nav .full{display:none} }
+@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%;gap:4px} #nav a{padding:6px 8px;font-size:12.5px} #nav .full{display:none} }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <header id="top">
   <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Weather, floods, fires & air</small></div>
-  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html">🛰 Daily</a><a id=navHires href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html" class=on>🌀 Hazards<span class="full"> &amp; air</span></a></nav>
+  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html" class=on>🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a></nav>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <div class="ctl">
     <button class="btn sm" id="refresh" title="Refresh forecasts">↻</button>
@@ -1288,14 +1288,16 @@ function showResults(list){
 }
 $('search').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const f=$('results').firstChild; if(f) f.click(); } });
 document.addEventListener('click',e=>{ if(!$('searchWrap').contains(e.target)) $('results').style.display='none'; });
+/* shared view: every page remembers the same centre, zoom and pin, so switching tabs keeps you in place */
+const ETMV = { key:'etm-view',
+  save(lat,lng,z,pin){ try{ localStorage.setItem(this.key, JSON.stringify({lat:+lat, lng:+lng, z:+z, pin: pin ? [+pin.lat, +pin.lng] : null})); }catch(e){} },
+  load(){ try{ return JSON.parse(localStorage.getItem(this.key) || 'null'); }catch(e){ return null; } },
+  fromHash(){ const p = new URLSearchParams(location.hash.slice(1)); return p.get('c') || p.get('p'); } };
 function saveHash(){
   const c=map.getCenter(), p=new URLSearchParams(); p.set('c',`${c.lat.toFixed(4)},${c.lng.toFixed(4)},${map.getZoom()}`);
   if(pin) p.set('p',`${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}`);
   try{ history.replaceState(null,'','#'+p.toString()); }catch(e){}
-  const q = pin ? `p=${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}` : '';
-  const cc = pin || c;
-  $('navDaily').href = `daily.html#c=${cc.lat.toFixed(4)},${cc.lng.toFixed(4)},6${q?'&'+q:''}`;
-  $('navHires').href = `hires.html#c=${cc.lat.toFixed(5)},${cc.lng.toFixed(5)},13${q?'&'+q:''}`;
+  ETMV.save(c.lat, c.lng, map.getZoom(), pin);
 }
 map.on('moveend', saveHash);
 window.addEventListener('resize', fitHeader);
@@ -1304,6 +1306,7 @@ setInterval(()=>{ loadCyclones(); loadFloodEvents(); loadWildfireEvents(); if(pi
 (function init(){
   fitHeader();
   let p0=null;
+  if(!ETMV.fromHash()){ const v = ETMV.load(); if(v){ map.setView([v.lat, v.lng], Math.max(2, Math.min(12, Math.round(v.z)))); if(v.pin) p0 = L.latLng(v.pin[0], v.pin[1]); } }
   try{ const p=new URLSearchParams(location.hash.slice(1));
     if(p.get('c')){ const [a,b,z]=p.get('c').split(',').map(Number); map.setView([a,b], z||5); }
     if(p.get('p')){ const [a,b]=p.get('p').split(',').map(Number); p0=L.latLng(a,b); if(!p.get('c')) map.setView(p0,6); }

@@ -769,14 +769,14 @@ select option{background:#121924}
 #nav a{flex-shrink:0;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;font-weight:500;white-space:nowrap;color:#e8edf3;text-decoration:none}
 #nav a:hover{background:rgba(255,255,255,.12)}
 #nav a.on{background:#5ec8ff;border-color:#5ec8ff;color:#04121d;font-weight:700}
-@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%} #nav a{padding:7px 10px} #nav .full{display:none} }
+@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%;gap:4px} #nav a{padding:6px 8px;font-size:12.5px} #nav .full{display:none} }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <header id="top">
   <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Hi-res history</small></div>
-  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html">🛰 Daily</a><a id=navHires href="hires.html" class=on>🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a></nav>
+  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html" class=on>🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a></nav>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <div class="ctl">
     <button class="btn sm on" id="lblBtn">Labels</button>
@@ -1168,22 +1168,25 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- hash / links ---------- */
+/* shared view: every page remembers the same centre, zoom and pin, so switching tabs keeps you in place */
+const ETMV = { key:'etm-view',
+  save(lat,lng,z,pin){ try{ localStorage.setItem(this.key, JSON.stringify({lat:+lat, lng:+lng, z:+z, pin: pin ? [+pin.lat, +pin.lng] : null})); }catch(e){} },
+  load(){ try{ return JSON.parse(localStorage.getItem(this.key) || 'null'); }catch(e){ return null; } },
+  fromHash(){ const p = new URLSearchParams(location.hash.slice(1)); return p.get('c') || p.get('p'); } };
 function saveHash(){
   const c=map.getCenter(), p=new URLSearchParams();
   p.set('c',`${c.lat.toFixed(5)},${c.lng.toFixed(5)},${map.getZoom()}`);
   if(S.pin) p.set('p',`${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}`);
   if(S.src!=='esri') p.set('src',S.src); else if(S.items[S.idx]) p.set('r', S.items[S.idx].releaseNum);
   try{ history.replaceState(null,'','#'+p.toString()); }catch(e){}
-  const d=new URLSearchParams(); d.set('c',`${c.lat.toFixed(4)},${c.lng.toFixed(4)},${Math.max(2,Math.min(13,map.getZoom()-6))}`);
-  if(S.pin) d.set('p',`${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}`);
-  $('navDaily').href='daily.html#'+d.toString();
-  { const zc = S.pin || c; $('navHaz').href = `hazards.html#c=${zc.lat.toFixed(4)},${zc.lng.toFixed(4)},6` + (S.pin ? `&p=${S.pin.lat.toFixed(5)},${S.pin.lng.toFixed(5)}` : ''); }
+  ETMV.save(c.lat, c.lng, map.getZoom(), S.pin);
 }
 window.addEventListener('resize',()=>{fitHeader();clip();});
 
 (async function init(){
   fitHeader();
   let pin=null, rel=null;
+  if(!ETMV.fromHash()){ const v = ETMV.load(); if(v){ map.setView([v.lat, v.lng], Math.max(2, Math.min(19, Math.round(v.z)))); if(v.pin) pin = L.latLng(v.pin[0], v.pin[1]); } }
   const wantSrc = new URLSearchParams(location.hash.slice(1)).get('src');   // read before map moves rewrite the hash
   try{ const p=new URLSearchParams(location.hash.slice(1));
     if(p.get('c')){ const [a,b,z]=p.get('c').split(',').map(Number); map.setView([a,b], z||16); }

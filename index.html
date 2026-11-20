@@ -21,7 +21,7 @@ body{background:radial-gradient(1200px 600px at 70% -10%,rgba(94,200,255,.16),tr
 #nav::-webkit-scrollbar{display:none}
 #nav a{flex-shrink:0;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;font-weight:500;white-space:nowrap}
 #nav a.on{background:var(--acc);border-color:var(--acc);color:#04121d;font-weight:700}
-@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%} #nav a{padding:7px 10px} #nav .full{display:none} }
+@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%;gap:4px} #nav a{padding:6px 8px;font-size:12.5px} #nav .full{display:none} }
 main{max-width:1000px;margin:0 auto;padding:34px 16px 50px}
 h1{font-size:clamp(28px,6vw,44px);line-height:1.1;margin:0 0 10px;letter-spacing:-.5px}
 .lead{color:var(--mut);font-size:16.5px;max-width:640px;margin:0 0 26px}
@@ -44,11 +44,11 @@ footer{color:var(--mut);font-size:12.5px;margin-top:36px;line-height:1.6}
 <body>
 <header id="top">
   <div class="brand"><span class="dot"></span>Earth Time Machine</div>
-  <nav id="nav"><a href="./" class="on">🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a></nav>
+  <nav id="nav"><a href="./" class=on>🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a></nav>
 </header>
 <main>
   <h1>See any place on Earth change over time</h1>
-  <p class="lead">Free satellite views of every day, sharp photos going back years, and live cyclone and heat-wave outlooks. Pick a tool, then tap the map or search a place.</p>
+  <p class="lead">Free satellite views of every day, sharp photos going back years, live hazards, and the deep history of any spot, from ancient kingdoms to moving continents. Pick a tool, then tap the map or search a place.</p>
 
   <div class="cards">
     <a class="card" href="daily.html" style="--c:#5ec8ff">
@@ -69,6 +69,12 @@ footer{color:var(--mut);font-size:12.5px;margin-top:36px;line-height:1.6}
       <ul><li>Active cyclones with forecast tracks</li><li>Heat waves using IMD criteria</li><li>River floods (30-day), flash-flood potential</li><li>Wildfires, fire weather and 5-day air quality (India AQI)</li><li>Rain totals and soil wetness for farming</li></ul>
       <span class="go">Open hazards &amp; air →</span>
     </a>
+    <a class="card" href="history.html" style="--c:#ffc34d">
+      <div class="ic">📜</div><h2>History &amp; geology</h2>
+      <p>Who ruled any place, and what lies beneath it.</p>
+      <ul><li>Kingdoms and empires from prehistory to today</li><li>Currency, capital and language of each</li><li>Rocks, tectonic plate, and where the land was 500 million years ago</li></ul>
+      <span class="go">Open history →</span>
+    </a>
   </div>
 
   <h3>Try a place</h3>
@@ -78,11 +84,13 @@ footer{color:var(--mut);font-size:12.5px;margin-top:36px;line-height:1.6}
     <a href="hires.html#c=17.44155,78.38264,12&p=17.44155,78.38264&src=ls">🏙 HITEC City · Landsat since 1984</a>
     <a href="hazards.html#c=15.01917,80.0525,5&p=15.01917,80.0525">🌀 Coastal Andhra hazards</a>
     <a href="daily.html#c=20,80,4">🛰 India today from space</a>
+    <a href="history.html#c=17.38,78.48,6&p=17.36,78.47">📜 Hyderabad through history</a>
+    <a href="history.html#c=15.02,80.05,6&p=15.0192,80.0525">📜 Ramayapatnam: rulers &amp; rocks</a>
   </div>
 
   <footer>
     Imagery &amp; data: NASA GIBS/EOSDIS · Esri World Imagery &amp; Wayback · EOX Sentinel-2 cloudless · Sentinel-2 &amp; Landsat via Microsoft Planetary Computer ·
-    GDACS (cyclones, floods) · Open-Meteo (forecasts) · GloFAS/Copernicus (rivers) · NASA FIRMS/VIIRS (fires) · CAMS (air quality) · OpenStreetMap (search). Forecasts are for information only. Follow official warnings from IMD and local authorities.
+    GDACS (cyclones, floods) · Open-Meteo (forecasts) · GloFAS/Copernicus (rivers) · NASA FIRMS/VIIRS (fires) · CAMS (air quality) · OpenStreetMap (search) · historical-basemaps (GPL-3.0) · Wikipedia/Wikidata · Macrostrat · GPlates. Forecasts are for information only. Follow official warnings from IMD and local authorities.
   </footer>
 </main>
 </body>
