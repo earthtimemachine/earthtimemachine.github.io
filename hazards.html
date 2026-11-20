@@ -726,7 +726,7 @@ select option{background:#121924}
 .al.rain{color:#dcd6ff;border-color:rgba(150,130,255,.6);background:rgba(150,130,255,.15)}
 .al.ok{color:#cff5e3;border-color:rgba(95,224,160,.5);background:rgba(95,224,160,.1)}
 #chart{display:block;width:100%;height:120px;padding:0 6px}
-#days{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 12px;scrollbar-width:thin}
+#days{display:flex;align-items:flex-start;gap:6px;overflow-x:auto;padding:4px 12px 12px;scrollbar-width:thin}
 .day{flex:0 0 92px;border:1px solid var(--line);border-radius:10px;background:#0e141c;padding:7px 8px;font-size:12px;line-height:1.35}
 .day b{display:block;font-size:12.5px}
 .day .ic{font-size:20px;line-height:1.2}
@@ -761,7 +761,7 @@ select option{background:#121924}
 <body>
 <div id="map"></div>
 <header id="top">
-  <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Cyclones & heat</small></div>
+  <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Cyclones, heat & floods</small></div>
   <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html">🛰 Daily</a><a id=navHires href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html" class=on>🌀 Cyclones<span class="full"> &amp; heat</span></a></nav>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <div class="ctl">
@@ -788,6 +788,14 @@ select option{background:#121924}
     <div id="alerts"></div>
     <svg id="chart" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
     <div id="days"></div>
+  </div>
+  <div class="sec">
+    <div class="row" style="padding-bottom:2px"><b>🌊 Floods &amp; water</b><span class="muted">for farm and site planning</span></div>
+    <div id="waterInfo" class="hint" style="padding-bottom:6px">Pick a place to see river levels, flash-flood potential and soil wetness.</div>
+    <svg id="riverChart" viewBox="0 0 600 110" preserveAspectRatio="none" style="display:block;width:100%;height:110px;padding:0 6px"></svg>
+    <div id="riverInfo" class="hint"></div>
+  </div>
+  <div class="sec">
     <div class="hint" id="hint">
       16-day forecast from Open-Meteo (best-match weather models), compared with the 1991–2020 normal for the same dates (ERA5).
       Heat waves use IMD criteria. Global models soften cyclone winds and rain near the eye, so treat values as minimums and
@@ -811,8 +819,10 @@ let busy=0; const spin = on => { busy+=on?1:-1; $('spin').classList.toggle('on',
 /* ---------- map ---------- */
 const map = L.map('map',{center:[17,82],zoom:4,minZoom:2,maxZoom:12,zoomControl:false,worldCopyJump:true});
 L.control.zoom({position:'topright'}).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,
-  attribution:'© OpenStreetMap © CARTO · Cyclones: GDACS (EC-JRC/UN) · Forecast: Open-Meteo · Search © OpenStreetMap'}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,maxZoom:19,
+  attribution:'Basemap © Esri, HERE, Garmin, © OpenStreetMap · Cyclones & floods: GDACS (EC-JRC/UN) · Forecast: Open-Meteo · Rivers: GloFAS (Copernicus) · Search © OpenStreetMap'}).addTo(map);
+map.createPane('labels').style.zIndex=450; map.getPane('labels').style.pointerEvents='none';
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{pane:'labels',maxNativeZoom:16,maxZoom:19}).addTo(map);
 const tcLayer = L.layerGroup().addTo(map);
 
 /* ---------- cyclones (GDACS) ---------- */
@@ -886,6 +896,9 @@ function updateNearest(){
       nearestHTML = `<span class="al ${cls}">🌀 ${best.s.name}: closest ≈ ${Math.round(best.d)} km ${when}</span>`;
     }
   }
+  floodNearHTML='';
+  if(pin && floods.length){ let b=null; floods.forEach(f=>{ const d=km(pin,f); if(!b||d<b.d) b={d,f}; });
+    if(b && b.d < 400) floodNearHTML = `<span class="al ${b.f.alert==='red'||b.f.alert==='orange'?'sev':'rain'}">🌊 Active flood event ${Math.round(b.d)} km away${b.f.country?' ('+b.f.country+')':''} · GDACS ${b.f.alert}</span>`; }
   renderAlerts();
 }
 
@@ -894,7 +907,7 @@ let pin=null, pinM=null, fc=null, normals=null, normKey='', alertHTML='';
 const pinIcon=L.divIcon({className:'',html:'<div class="pin"></div>',iconSize:[18,18],iconAnchor:[9,9]});
 map.on('click', e=> setPin(e.latlng));
 $('terrain').onchange = ()=> render();
-$('refresh').onclick = ()=>{ loadCyclones(); if(pin) loadForecast(true); };
+$('refresh').onclick = ()=>{ loadCyclones(); loadFloodEvents(); if(pin) loadForecast(true); };
 
 async function setPin(ll, name){
   pin = L.latLng(ll.lat, ((ll.lng+540)%360)-180);
@@ -913,13 +926,14 @@ async function loadForecast(force){
   if(!pin) return; spin(true);
   const lat=pin.lat.toFixed(3), lng=pin.lng.toFixed(3);
   try{
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max&forecast_days=16&timezone=auto`;
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max&hourly=precipitation,soil_moisture_3_to_9cm&forecast_days=16&timezone=auto`;
     const r = await fetch(u); if(!r.ok) throw new Error('fc'); fc = await r.json(); fc.fetched = new Date();
     if(!force && normKey !== `${lat},${lng}`) normals = null;
     // auto-guess hills from elevation
     if(fc.elevation > 900 && $('terrain').value==='plains') $('terrain').value='hills';
     render();
     if(!normals) loadNormals(lat,lng);
+    loadTerrain(lat,lng); loadRiver(lat,lng);
   }catch(e){ $('alerts').innerHTML='<span class="al sev">Forecast service unavailable. Try ↻ in a moment.</span>'; }
   finally{ spin(false); }
 }
@@ -953,11 +967,117 @@ const WX = c => c==null?'·': c===0?'☀️': c<=2?'🌤️': c===3?'☁️': c<
 function windCls(g){ return g>=118?['Very severe winds','sev'] : g>=89?['Severe winds','sev'] : g>=62?['Gale-force winds','wind'] : null; }
 function rainCls(p){ return p>=204.5?['Extremely heavy rain','sev'] : p>=115.6?['Very heavy rain','rain'] : p>=64.5?['Heavy rain','rain'] : null; }
 
+/* ---------- flash floods (indicative) ---------- */
+const SAT = 0.38;            // m³/m³: near-saturated topsoil for most soils
+let relief = null, reliefKey = '';
+async function loadTerrain(lat,lng){
+  if(reliefKey === `${lat},${lng}`) return;
+  try{
+    const la=[], lo=[], d=0.02;
+    for(const a of [-d,0,d]) for(const b of [-d,0,d]){ la.push((+lat+a).toFixed(4)); lo.push((+lng+b).toFixed(4)); }
+    const j = await (await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${la.join(',')}&longitude=${lo.join(',')}`)).json();
+    const e = (j.elevation||[]).filter(v=>v!=null); relief = e.length ? Math.max(...e)-Math.min(...e) : null; reliefKey=`${lat},${lng}`; render();
+  }catch(e){}
+}
+function flashByDay(){
+  const H = fc && fc.hourly; const out = {}; if(!H || !H.precipitation) return out;
+  const p = H.precipitation, sm = H.soil_moisture_3_to_9cm || [];
+  for(let i=0;i<p.length;i++){
+    const d = H.time[i].slice(0,10), o = out[d] || (out[d] = {max1:0, max3:0, sum:0, sm:null, smMax:null});
+    const v = p[i]||0; o.sum += v; o.max1 = Math.max(o.max1, v);
+    o.max3 = Math.max(o.max3, v + (p[i-1]||0) + (p[i-2]||0));
+    if(sm[i]!=null){ if(o.sm==null) o.sm = sm[i]; o.smMax = Math.max(o.smMax??0, sm[i]); }
+  }
+  return out;
+}
+function flashLevel(f){
+  if(!f) return null;
+  const inten = (f.max3>=75 || f.sum>=204.5) ? 3 : (f.max3>=50 || f.sum>=115.6) ? 2 : (f.max3>=30 || f.sum>=64.5) ? 1 : 0;
+  if(!inten) return null;
+  const score = inten + ((f.smMax!=null && f.smMax>=SAT) ? 1 : 0) + ((relief!=null && relief>=150) ? 1 : 0);
+  return score>=3 ? 'High' : score===2 ? 'Moderate' : 'Low';
+}
+const soilWord = v => v==null ? 'unknown' : v>=SAT ? 'near-saturated' : v>=0.30 ? 'wet' : v>=0.15 ? 'moist' : 'dry';
+
+/* ---------- river floods (GloFAS via Open-Meteo) ---------- */
+let river = null, riverKey = '', riverHTML = '';
+async function loadRiver(lat,lng){
+  const key = `${lat},${lng}`;
+  try{
+    const base = `https://flood-api.open-meteo.com/v1/flood?latitude=${lat}&longitude=${lng}`;
+    const f = await (await fetch(`${base}&daily=river_discharge,river_discharge_median,river_discharge_max,river_discharge_p25,river_discharge_p75&past_days=7&forecast_days=30`)).json();
+    let clim = (riverKey===key && river) ? river.clim : null;
+    if(!clim){ const h = await (await fetch(`${base}&daily=river_discharge&start_date=1984-01-01&end_date=2021-12-31`)).json(); clim = riverClim(h.daily); }
+    river = {d:f.daily, clim}; riverKey = key; renderRiver();
+  }catch(e){ river=null; riverHTML=''; $('riverInfo').textContent='River forecast unavailable right now. Try ↻ in a moment.'; $('riverChart').innerHTML=''; renderAlerts(); }
+}
+function riverClim(d){
+  const maxByYear = {}; let s=0, n=0;
+  d.time.forEach((t,i)=>{ const v=d.river_discharge[i]; if(v==null) return; s+=v; n++; const y=t.slice(0,4); if(maxByYear[y]==null || v>maxByYear[y]) maxByYear[y]=v; });
+  const am = Object.values(maxByYear).sort((a,b)=>a-b);
+  const q = p => { if(!am.length) return null; const i=(am.length-1)*p, lo=Math.floor(i), hi=Math.ceil(i); return am[lo]+(am[hi]-am[lo])*(i-lo); };
+  return {mean: n? s/n : 0, rp2:q(0.5), rp5:q(0.8), rp20:q(0.95), years:am.length};   // flood levels from yearly peaks (2-, 5-, 20-year)
+}
+const fmtQ = v => v==null ? '–' : v>=100 ? Math.round(v).toLocaleString() : v>=10 ? v.toFixed(0) : v.toFixed(1);
+function renderRiver(){
+  if(!river) return;
+  const {d, clim} = river, today = fc && fc.daily ? fc.daily.time[0] : new Date().toISOString().slice(0,10);
+  riverHTML = '';
+  if(!clim.mean || clim.mean < 2){
+    $('riverInfo').innerHTML = `No significant river within ~5 km of the pin (average flow ${fmtQ(clim.mean)} m³/s). Move the pin onto a river to see its 30-day flood forecast.`;
+    $('riverChart').innerHTML = ''; renderAlerts(); return;
+  }
+  const rows = d.time.map((t,i)=>({t, past:t<today, q:d.river_discharge[i], med:d.river_discharge_median?d.river_discharge_median[i]:null, max:d.river_discharge_max?d.river_discharge_max[i]:null, p25:d.river_discharge_p25?d.river_discharge_p25[i]:null, p75:d.river_discharge_p75?d.river_discharge_p75[i]:null}));
+  const fut = rows.filter(r=>!r.past);
+  const lvl = v => v==null ? 0 : (clim.rp20 && v>=clim.rp20) ? 3 : (clim.rp5 && v>=clim.rp5) ? 2 : (clim.rp2 && v>=clim.rp2) ? 1 : 0;
+  const LV = ['', 'River flooding likely (above 2-year flood level)', 'Severe river flooding (above 5-year level)', 'Extreme river flooding (above 20-year level)'];
+  spans(fut, r=> lvl(r.med??r.q)).forEach(s=>{ const top=s.items.reduce((a,b)=> ((b.med??b.q)>(a.med??a.q)?b:a)); const L=lvl(top.med??top.q);
+    riverHTML += `<span class="al ${L>=2?'sev':'rain'}">🌊 ${LV[L]} ${range(s)} · peak ≈ ${fmtQ(top.med??top.q)} m³/s</span>`; });
+  if(!riverHTML){ const risky = fut.filter(r=> lvl(r.max)>=1);
+    if(risky.length) riverHTML = `<span class="al rain">🌊 Small chance of river flooding ${fmtDay(risky[0].t)}${risky.length>1?' – '+fmtDay(risky[risky.length-1].t):''} (some forecasts exceed the 2-year flood level)</span>`; }
+  const peak = fut.reduce((a,b)=> ((b.med??b.q??0) > (a.med??a.q??0) ? b : a), fut[0]||{});
+  const pv = peak.med??peak.q;
+  $('riverInfo').innerHTML = `River at the pin (GloFAS, ~5 km grid): average flow <b>${fmtQ(clim.mean)} m³/s</b> · 2-year flood level <b>${fmtQ(clim.rp2)}</b>, 5-year <b>${fmtQ(clim.rp5)}</b> m³/s (from ${clim.years} years of peaks).
+    30-day forecast peak <b>${fmtQ(pv)} m³/s</b>${peak.t?` around ${fmtDay(peak.t)}`:''}${pv&&clim.mean?` (${(pv/clim.mean).toFixed(1)}× average)`:''}. Chart: line = most likely, band = middle half of forecasts, dashed = highest forecast.`;
+  drawRiver(rows, clim, today); renderAlerts();
+}
+function drawRiver(rows, clim, today){
+  const svg=$('riverChart'), W=600, H=110, P=16;
+  const vals = rows.flatMap(r=>[r.q, r.med, r.max, r.p75]).filter(v=>v!=null).concat([clim.rp2||0]);
+  const hi = Math.max(...vals)*1.08 || 1, x=i=> P + i*(W-2*P)/Math.max(1,rows.length-1), y=v=> H-P - v*(H-2*P)/hi;
+  const path = (key,col,dash,w=2)=>{ const pts=rows.map((r,i)=> r[key]!=null?`${x(i).toFixed(1)},${y(r[key]).toFixed(1)}`:null).filter(Boolean); return pts.length>1?`<polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="${w}" ${dash?'stroke-dasharray="4 4"':''} vector-effect="non-scaling-stroke"/>`:''; };
+  let g='';
+  const band = rows.map((r,i)=> r.p75!=null&&r.p25!=null ? [x(i), y(r.p75), y(r.p25)] : null).filter(Boolean);
+  if(band.length>1) g += `<polygon points="${band.map(b=>`${b[0].toFixed(1)},${b[1].toFixed(1)}`).join(' ')} ${band.slice().reverse().map(b=>`${b[0].toFixed(1)},${b[2].toFixed(1)}`).join(' ')}" fill="rgba(94,200,255,.18)"/>`;
+  [['rp2','2-yr flood level','#ffc34d',W-P],['rp5','5-yr','#ff7a45',W*0.72],['rp20','20-yr','#ff3b3b',W*0.5]].forEach(([k,lab,c,lx])=>{ const v=clim[k]; if(v && v<hi) g+=`<line x1="${P}" x2="${W-P}" y1="${y(v)}" y2="${y(v)}" stroke="${c}" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/><text x="${lx}" y="${y(v)-3}" fill="${c}" font-size="10" text-anchor="end">${lab}</text>`; });
+  const ti = rows.findIndex(r=>r.t>=today); if(ti>0) g+=`<line x1="${x(ti)}" x2="${x(ti)}" y1="${P-6}" y2="${H-P}" stroke="rgba(255,255,255,.35)" vector-effect="non-scaling-stroke"/><text x="${x(ti)+3}" y="${P}" fill="#93a1b2" font-size="10">today</text>`;
+  g += path('max','#5ec8ff',true,1.2) + path('med','#5ec8ff') + path('q','rgba(232,237,243,.7)',false,1.5).replace(/points="([^"]*)"/, (m,pts)=> 'points="'+pts.split(' ').slice(0, Math.max(2,ti+1)).join(' ')+'"');
+  g += `<text x="${P}" y="${H-3}" fill="#93a1b2" font-size="10">0</text><text x="${P}" y="11" fill="#93a1b2" font-size="10">${fmtQ(hi)} m³/s</text>`;
+  svg.innerHTML = g;
+}
+
+/* ---------- active flood events (GDACS) ---------- */
+let floods = []; const flLayer = L.layerGroup().addTo(map);
+async function loadFloodEvents(){
+  try{
+    const now=new Date(), from=new Date(Date.now()-21*864e5);
+    flLayer.clearLayers();
+    const r = await fetch(`https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=FL&fromdate=${ymd(from)}&todate=${ymd(now)}&alertlevel=green;orange;red`);
+    if(!r.ok) return; const js = await r.json();
+    floods = (js.features||[]).filter(f=>{ const p=f.properties||{}; return String(p.iscurrent).toLowerCase()==='true' || (p.todate && Date.now()-Date.parse(p.todate) < 3*864e5); })
+      .map(f=>({ name:(f.properties.eventname||f.properties.name||'Flood').replace(/^Flood\s*(in\s*)?/i,''), alert:(f.properties.alertlevel||'green').toLowerCase(),
+                 lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0], country:f.properties.country||'', report:f.properties.url&&f.properties.url.report, desc:f.properties.description||'' }));
+    floods.forEach(fl=>{ const ic=L.divIcon({className:'',html:`<div style="font-size:20px;filter:drop-shadow(0 0 3px #000)">🌊</div>`,iconSize:[22,22],iconAnchor:[11,11]});
+      L.marker([fl.lat,fl.lng],{icon:ic}).addTo(flLayer).bindPopup(`<b>🌊 Flood${fl.country?' · '+fl.country:''}</b><br>${fl.desc||fl.name}<br>GDACS alert: <b style="color:${ALERT_COL[fl.alert]}">${fl.alert}</b>${fl.report?`<br><a href="${fl.report}" target="_blank" rel="noopener" style="color:#5ec8ff">GDACS report ↗</a>`:''}`); });
+    updateNearest();
+  }catch(e){}
+}
+
 function render(){
   if(!fc) return;
-  const D=fc.daily, terr=$('terrain').value, days=$('days'); days.innerHTML='';
+  const D=fc.daily, terr=$('terrain').value, days=$('days'); days.innerHTML=''; const FB = flashByDay();
   const rows = D.time.map((t,i)=>{ const tmax=D.temperature_2m_max[i], n = normals ? normals[doy(t)] : null, dep = (n!=null && tmax!=null) ? tmax-n : null;
-    return {t, i, tmax, tmin:D.temperature_2m_min[i], feel:D.apparent_temperature_max[i], rain:D.precipitation_sum[i], wind:D.wind_speed_10m_max[i], gust:D.wind_gusts_10m_max[i], code:D.weather_code[i], n, dep, hw:classify(tmax,dep,terr)}; });
+    return {t, i, tmax, tmin:D.temperature_2m_min[i], feel:D.apparent_temperature_max[i], rain:D.precipitation_sum[i], wind:D.wind_speed_10m_max[i], gust:D.wind_gusts_10m_max[i], code:D.weather_code[i], n, dep, hw:classify(tmax,dep,terr), ff:flashLevel(FB[t]), fb:FB[t]}; });
   rows.forEach(r=>{
     const el=document.createElement('div'); el.className='day'+(r.hw?' '+r.hw:'');
     const w = windCls(r.gust||0), rn = rainCls(r.rain||0);
@@ -968,7 +1088,7 @@ function render(){
       <div class="muted">💨 ${r.gust!=null?Math.round(r.gust):'–'} km/h</div>
       <div class="muted">💧 ${r.rain!=null?r.rain.toFixed(r.rain<10?1:0):'–'} mm</div>
       ${r.hw?`<div class="f" style="color:${r.hw==='shw'?'#ff8080':'#ffab85'}">${r.hw==='shw'?'SEVERE HEAT WAVE':'HEAT WAVE'}</div>`:''}
-      ${w?`<div class="f" style="color:#8fd3ff">${w[0].toUpperCase()}</div>`:''}${rn?`<div class="f" style="color:#b9adff">${rn[0].toUpperCase()}</div>`:''}`;
+      ${w?`<div class="f" style="color:#8fd3ff">${w[0].toUpperCase()}</div>`:''}${rn?`<div class="f" style="color:#b9adff">${rn[0].toUpperCase()}</div>`:''}${r.ff?`<div class="f" style="color:#7fe0ff">FLASH FLOOD: ${r.ff.toUpperCase()}</div>`:''}`;
     days.appendChild(el);
   });
   // alerts summary
@@ -979,15 +1099,22 @@ function render(){
     out.push(`<span class="al ${sev?'sev':'hot'}">🔥 ${sev?'Severe heat wave':'Heat wave'} ${range(s)}${official}</span>`); });
   spans(rows, r=> windCls(r.gust||0)).forEach(s=>{ const top=s.items.reduce((a,b)=> (b.gust>a.gust?b:a)); out.push(`<span class="al ${windCls(top.gust)[1]}">💨 ${windCls(top.gust)[0]} ${range(s)} · gusts to ${Math.round(top.gust)} km/h</span>`); });
   spans(rows, r=> rainCls(r.rain||0)).forEach(s=>{ const top=s.items.reduce((a,b)=> (b.rain>a.rain?b:a)); out.push(`<span class="al ${rainCls(top.rain)[1]}">🌧 ${rainCls(top.rain)[0]} ${range(s)} · up to ${Math.round(top.rain)} mm/day</span>`); });
+  spans(rows, r=> r.ff).forEach(s=>{ const ord={Low:1,Moderate:2,High:3}; const top=s.items.reduce((a,b)=> ord[b.ff]>ord[a.ff]?b:a);
+    out.push(`<span class="al ${top.ff==='High'?'sev':'rain'}">⚡🌊 Flash-flood potential ${top.ff.toLowerCase()} ${range(s)} · bursts up to ${Math.round(top.fb.max3)} mm in 3 h</span>`); });
+  { const tot = rows.reduce((a,r)=> a+(r.rain||0), 0), wk = rows.slice(0,7).reduce((a,r)=> a+(r.rain||0), 0), sm0 = (rows[0].fb||{}).sm;
+    const wetDays = rows.filter(r=> (r.rain||0) >= 2.5).length;
+    $('waterInfo').innerHTML = `💧 Rain: <b>${Math.round(wk)} mm</b> next 7 days, <b>${Math.round(tot)} mm</b> next 16 days (${wetDays} rainy days) · 🌱 Topsoil now <b>${soilWord(sm0)}</b>${sm0!=null?` (${sm0.toFixed(2)} m³/m³)`:''}${relief!=null?` · ⛰ Terrain: ${relief>=150?'hilly':'fairly flat'} (${Math.round(relief)} m relief within ~2 km)`:''}.<br>
+      Flash-flood potential is an indicative score from forecast rain bursts (3-hour and daily totals), soil wetness and local terrain, not an official warning. For official flash-flood guidance see <a href="https://mausam.imd.gov.in/" target="_blank" rel="noopener">IMD</a>.`; }
   const hot = rows.filter(r=>r.dep!=null && r.dep>=3 && !r.hw);
   if(!runs.length && hot.length) out.push(`<span class="al hot">🌡 Warmer than normal on ${hot.length} of 16 days (up to +${Math.max(...hot.map(r=>r.dep)).toFixed(1)}°)</span>`);
-  if(!out.length) out.push(`<span class="al ok">✓ No heat wave, damaging wind or heavy rain in the 16-day forecast</span>`);
+  if(!out.length) out.push(`<span class="al ok">✓ No heat wave, damaging wind, heavy rain or flash-flood potential in the 16-day forecast</span>`);
   alertHTML = out.join('');
   renderAlerts();
   drawChart(rows, terr);
   $('hint').firstChild.textContent = `16-day forecast from Open-Meteo (best-match weather models), fetched ${fc.fetched.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}, compared with the 1991–2020 normal for the same dates (ERA5${normals?'':', loading…'}). Heat waves use IMD criteria (${THR[terr]} °C minimum for ${terr}). Global models soften cyclone winds and rain near the eye, so treat values as minimums and follow official warnings: `;
 }
-function renderAlerts(){ $('alerts').innerHTML = (nearestHTML||'') + (alertHTML||''); }
+function renderAlerts(){ $('alerts').innerHTML = (nearestHTML||'') + (floodNearHTML||'') + (riverHTML||'') + (alertHTML||''); }
+let floodNearHTML='';
 function spans(rows, test){ const out=[]; let cur=null; rows.forEach(r=>{ if(test(r)){ if(!cur){cur={items:[]};out.push(cur);} cur.items.push(r);} else cur=null; }); return out; }
 function range(s){ const a=s.items[0].t, b=s.items[s.items.length-1].t; return a===b ? fmtDay(a) : `${fmtDay(a)} – ${fmtDay(b)}`; }
 function drawChart(rows, terr){
@@ -1034,7 +1161,7 @@ function saveHash(){
 }
 map.on('moveend', saveHash);
 window.addEventListener('resize', fitHeader);
-setInterval(()=>{ loadCyclones(); if(pin) loadForecast(true); }, 30*60*1000);   // refresh every 30 min while open
+setInterval(()=>{ loadCyclones(); loadFloodEvents(); if(pin) loadForecast(true); }, 30*60*1000);   // refresh every 30 min while open
 
 (function init(){
   fitHeader();
@@ -1043,7 +1170,7 @@ setInterval(()=>{ loadCyclones(); if(pin) loadForecast(true); }, 30*60*1000);   
     if(p.get('c')){ const [a,b,z]=p.get('c').split(',').map(Number); map.setView([a,b], z||5); }
     if(p.get('p')){ const [a,b]=p.get('p').split(',').map(Number); p0=L.latLng(a,b); if(!p.get('c')) map.setView(p0,6); }
   }catch(e){}
-  loadCyclones();
+  loadCyclones(); loadFloodEvents();
   if(p0) setPin(p0); else toast('Tap any place to see its 16-day heat, wind and rain outlook');
   saveHash();
 })();
