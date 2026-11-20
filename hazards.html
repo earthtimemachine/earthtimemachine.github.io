@@ -748,16 +748,23 @@ select option{background:#121924}
   #panel{left:6px;right:6px;bottom:6px;max-height:58vh}
   .day{flex-basis:84px}
 }
+
+/* shared tab bar */
+#nav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:0 1 auto;min-width:0}
+#nav::-webkit-scrollbar{display:none}
+#nav a{flex-shrink:0;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:13px;font-weight:500;white-space:nowrap;color:#e8edf3;text-decoration:none}
+#nav a:hover{background:rgba(255,255,255,.12)}
+#nav a.on{background:#5ec8ff;border-color:#5ec8ff;color:#04121d;font-weight:700}
+@media (max-width:720px){ #top .brand{display:none} #nav{flex:1 1 100%} #nav a{padding:7px 10px} #nav .full{display:none} }
 </style>
 </head>
 <body>
 <div id="map"></div>
 <header id="top">
   <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Cyclones & heat</small></div>
+  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html">🛰 Daily</a><a id=navHires href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html" class=on>🌀 Cyclones<span class="full"> &amp; heat</span></a></nav>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <div class="ctl">
-    <a class="btn sm" id="dailyLink" href="./">🛰 Daily</a>
-    <a class="btn sm" id="hiresLink" href="hires.html">🔍 Hi-res</a>
     <button class="btn sm" id="refresh" title="Refresh forecasts">↻</button>
     <span id="spin"></span>
   </div>
@@ -1022,8 +1029,8 @@ function saveHash(){
   try{ history.replaceState(null,'','#'+p.toString()); }catch(e){}
   const q = pin ? `p=${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}` : '';
   const cc = pin || c;
-  $('dailyLink').href = `./#c=${cc.lat.toFixed(4)},${cc.lng.toFixed(4)},6${q?'&'+q:''}`;
-  $('hiresLink').href = `hires.html#c=${cc.lat.toFixed(5)},${cc.lng.toFixed(5)},13${q?'&'+q:''}`;
+  $('navDaily').href = `daily.html#c=${cc.lat.toFixed(4)},${cc.lng.toFixed(4)},6${q?'&'+q:''}`;
+  $('navHires').href = `hires.html#c=${cc.lat.toFixed(5)},${cc.lng.toFixed(5)},13${q?'&'+q:''}`;
 }
 map.on('moveend', saveHash);
 window.addEventListener('resize', fitHeader);

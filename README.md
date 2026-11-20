@@ -1,9 +1,10 @@
 # Earth Time Machine
 
-Daily NASA satellite imagery and high-resolution history of any place on Earth.
+See any place on Earth change over time — free.
 
-- Daily view: https://earthtimemachine.github.io/
-- Hi-res history: https://earthtimemachine.github.io/hires.html
-- Cyclones & heat waves: https://earthtimemachine.github.io/hazards.html
+- Home: https://earthtimemachine.github.io/
+- Daily view (NASA, every day): https://earthtimemachine.github.io/daily.html
+- Hi-res history (Esri, Sentinel-2, Landsat): https://earthtimemachine.github.io/hires.html
+- Cyclones & heat waves (16-day outlook): https://earthtimemachine.github.io/hazards.html
 
-Imagery: NASA GIBS/EOSDIS, Esri World Imagery Wayback, EOX Sentinel-2 cloudless, Sentinel-2 and Landsat via Microsoft Planetary Computer. Cyclones: GDACS. Forecasts: Open-Meteo.
+Imagery & data: NASA GIBS/EOSDIS, Esri World Imagery Wayback, EOX Sentinel-2 cloudless, Sentinel-2 and Landsat via Microsoft Planetary Computer, GDACS (cyclones), Open-Meteo (forecasts), OpenStreetMap (search).
