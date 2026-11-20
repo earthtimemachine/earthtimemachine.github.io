@@ -738,6 +738,22 @@ select option{background:#121924}
 .up{color:#ff9d76}.dn{color:#8fd3ff}
 .hint{color:var(--mut);font-size:12px;padding:0 12px 12px;line-height:1.45}
 .hint a{color:var(--acc)}
+.bar{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;position:sticky;top:0;z-index:2;background:rgba(14,19,26,.97);border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}
+.bar .handle{position:absolute;left:50%;top:4px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:rgba(255,255,255,.25)}
+#sum{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+#panel.min{overflow:hidden}
+#panel.min #pbody{display:none}
+#panel.min .bar{border-bottom:none;border-radius:14px}
+details.sec>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:700}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary:after{content:"▾";margin-left:auto;color:var(--mut);transition:transform .2s}
+details.sec:not([open])>summary:after{transform:rotate(-90deg)}
+details.sec>summary .muted{font-weight:400}
+.aq{flex:0 0 96px;border:1px solid var(--line);border-radius:10px;background:#0e141c;padding:7px 8px;font-size:12px;line-height:1.35}
+.aq .v{font-size:18px;font-weight:800}
+.aq .c{display:inline-block;margin-top:2px;padding:1px 6px;border-radius:6px;font-size:10.5px;font-weight:700;color:#111}
+#aqDays{display:flex;align-items:flex-start;gap:6px;overflow-x:auto;padding:4px 12px 12px}
+.tog{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut);cursor:pointer}
 #toast{position:fixed;left:50%;top:calc(var(--hdr) + 14px);transform:translateX(-50%);z-index:3000;background:#1b2431;border:1px solid var(--line);padding:9px 14px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90vw;text-align:center}
 #toast.on{opacity:1}
 .pin{width:18px;height:18px;border-radius:50%;background:var(--warn);border:3px solid #fff;box-shadow:0 0 0 6px rgba(255,195,77,.3),0 2px 8px rgba(0,0,0,.6)}
@@ -745,7 +761,7 @@ select option{background:#121924}
 @keyframes spinr{to{transform:rotate(-360deg)}}
 @media (max-width:720px){
   .brand small{display:none}
-  #panel{left:6px;right:6px;bottom:6px;max-height:58vh}
+  #panel{left:6px;right:6px;bottom:6px;max-height:52vh}
   .day{flex-basis:84px}
 }
 
@@ -761,8 +777,8 @@ select option{background:#121924}
 <body>
 <div id="map"></div>
 <header id="top">
-  <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Cyclones, heat & floods</small></div>
-  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html">🛰 Daily</a><a id=navHires href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html" class=on>🌀 Cyclones<span class="full"> &amp; heat</span></a></nav>
+  <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Weather, floods, fires & air</small></div>
+  <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a id=navDaily href="daily.html">🛰 Daily</a><a id=navHires href="hires.html">🔍 Hi-res<span class="full"> history</span></a><a id=navHaz href="hazards.html" class=on>🌀 Hazards<span class="full"> &amp; air</span></a></nav>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <div class="ctl">
     <button class="btn sm" id="refresh" title="Refresh forecasts">↻</button>
@@ -771,6 +787,8 @@ select option{background:#121924}
 </header>
 
 <section id="panel">
+  <div class="bar" id="bar"><span class="handle"></span><span id="sum">📍 Tap the map or search a place</span><button class="btn sm" id="fold" type="button">▾ Hide</button></div>
+  <div id="pbody">
   <div class="row">
     <span class="lbl">🌀 Active cyclones</span>
     <span id="tcList" class="muted">Loading…</span>
@@ -789,20 +807,33 @@ select option{background:#121924}
     <svg id="chart" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
     <div id="days"></div>
   </div>
-  <div class="sec">
-    <div class="row" style="padding-bottom:2px"><b>🌊 Floods &amp; water</b><span class="muted">for farm and site planning</span></div>
+  <details class="sec" id="secWater" open>
+    <summary>🌊 Floods &amp; water <span class="muted">for farm and site planning</span></summary>
     <div id="waterInfo" class="hint" style="padding-bottom:6px">Pick a place to see river levels, flash-flood potential and soil wetness.</div>
     <svg id="riverChart" viewBox="0 0 600 110" preserveAspectRatio="none" style="display:block;width:100%;height:110px;padding:0 6px"></svg>
     <div id="riverInfo" class="hint"></div>
-  </div>
+  </details>
+  <details class="sec" id="secFire" open>
+    <summary>🔥 Wildfires <span class="muted">satellite detections &amp; fire weather</span></summary>
+    <div class="row" style="padding-top:0"><label class="tog"><input type="checkbox" id="fireTog" checked> Show fire detections on map (last 2 days)</label></div>
+    <div id="fireInfo" class="hint">Pick a place to check for fires nearby.</div>
+  </details>
+  <details class="sec" id="secAir" open>
+    <summary>🌫 Air quality <span class="muted">India AQI (CPCB scale), 5 days</span></summary>
+    <div id="aqNow" class="hint">Pick a place to see its air-quality forecast.</div>
+    <div id="aqDays"></div>
+  </details>
   <div class="sec">
     <div class="hint" id="hint">
       16-day forecast from Open-Meteo (best-match weather models), compared with the 1991–2020 normal for the same dates (ERA5).
       Heat waves use IMD criteria. Global models soften cyclone winds and rain near the eye, so treat values as minimums and
       follow official warnings: <a href="https://mausam.imd.gov.in/" target="_blank" rel="noopener">IMD</a> ·
       <a href="https://rsmcnewdelhi.imd.gov.in/" target="_blank" rel="noopener">RSMC New Delhi (cyclones)</a> ·
-      <a href="https://www.gdacs.org/" target="_blank" rel="noopener">GDACS</a>.
+      <a href="https://www.gdacs.org/" target="_blank" rel="noopener">GDACS</a> ·
+      <a href="https://firms.modaps.eosdis.nasa.gov/map/" target="_blank" rel="noopener">NASA FIRMS (fires)</a> ·
+      <a href="https://airquality.cpcb.gov.in/AQI_India/" target="_blank" rel="noopener">CPCB air quality</a>.
     </div>
+  </div>
   </div>
 </section>
 <div id="toast"></div>
@@ -907,7 +938,7 @@ let pin=null, pinM=null, fc=null, normals=null, normKey='', alertHTML='';
 const pinIcon=L.divIcon({className:'',html:'<div class="pin"></div>',iconSize:[18,18],iconAnchor:[9,9]});
 map.on('click', e=> setPin(e.latlng));
 $('terrain').onchange = ()=> render();
-$('refresh').onclick = ()=>{ loadCyclones(); loadFloodEvents(); if(pin) loadForecast(true); };
+$('refresh').onclick = e=>{ loadCyclones(); loadFloodEvents(); loadWildfireEvents(); if(pin) loadForecast(true); };
 
 async function setPin(ll, name){
   pin = L.latLng(ll.lat, ((ll.lng+540)%360)-180);
@@ -920,20 +951,20 @@ async function setPin(ll, name){
 }
 async function reverseName(ll){
   try{ const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${ll.lat}&lon=${ll.lng}`); const j=await r.json();
-    if(pin && pin.equals(ll)){ const a=j.address||{}; $('place').textContent = a.city||a.town||a.village||a.county||a.state_district||a.state||(j.display_name||'').split(',')[0]||'Selected spot'; } }catch(e){}
+    if(pin && pin.equals(ll)){ const a=j.address||{}; $('place').textContent = a.city||a.town||a.village||a.county||a.state_district||a.state||(j.display_name||'').split(',')[0]||'Selected spot'; renderAlerts(); } }catch(e){}
 }
 async function loadForecast(force){
   if(!pin) return; spin(true);
   const lat=pin.lat.toFixed(3), lng=pin.lng.toFixed(3);
   try{
-    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max&hourly=precipitation,soil_moisture_3_to_9cm&forecast_days=16&timezone=auto`;
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max&hourly=precipitation,soil_moisture_3_to_9cm,relative_humidity_2m&forecast_days=16&timezone=auto`;
     const r = await fetch(u); if(!r.ok) throw new Error('fc'); fc = await r.json(); fc.fetched = new Date();
     if(!force && normKey !== `${lat},${lng}`) normals = null;
     // auto-guess hills from elevation
     if(fc.elevation > 900 && $('terrain').value==='plains') $('terrain').value='hills';
     render();
     if(!normals) loadNormals(lat,lng);
-    loadTerrain(lat,lng); loadRiver(lat,lng);
+    loadTerrain(lat,lng); loadRiver(lat,lng); loadAir(lat,lng); checkFires();
   }catch(e){ $('alerts').innerHTML='<span class="al sev">Forecast service unavailable. Try ↻ in a moment.</span>'; }
   finally{ spin(false); }
 }
@@ -983,7 +1014,8 @@ function flashByDay(){
   const H = fc && fc.hourly; const out = {}; if(!H || !H.precipitation) return out;
   const p = H.precipitation, sm = H.soil_moisture_3_to_9cm || [];
   for(let i=0;i<p.length;i++){
-    const d = H.time[i].slice(0,10), o = out[d] || (out[d] = {max1:0, max3:0, sum:0, sm:null, smMax:null});
+    const d = H.time[i].slice(0,10), o = out[d] || (out[d] = {max1:0, max3:0, sum:0, sm:null, smMax:null, rhMin:null});
+    const rh = H.relative_humidity_2m ? H.relative_humidity_2m[i] : null; if(rh!=null) o.rhMin = o.rhMin==null ? rh : Math.min(o.rhMin, rh);
     const v = p[i]||0; o.sum += v; o.max1 = Math.max(o.max1, v);
     o.max3 = Math.max(o.max3, v + (p[i-1]||0) + (p[i-2]||0));
     if(sm[i]!=null){ if(o.sm==null) o.sm = sm[i]; o.smMax = Math.max(o.smMax??0, sm[i]); }
@@ -1073,11 +1105,112 @@ async function loadFloodEvents(){
   }catch(e){}
 }
 
+/* ---------- wildfires ---------- */
+const GIBS3857 = 'https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi', GIBS4326 = 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi';
+const FIRE_LAYERS = ['VIIRS_NOAA20_Thermal_Anomalies_375m_All','VIIRS_SNPP_Thermal_Anomalies_375m_All'];
+const dayStr = n => { const d=new Date(Date.now()-n*864e5); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+map.createPane('fires').style.zIndex = 420;
+const fireLayer = L.layerGroup();
+[1,0].forEach(n=> FIRE_LAYERS.forEach(id=> L.tileLayer.wms(GIBS3857,{layers:id, format:'image/png', transparent:true, version:'1.1.1', time:dayStr(n), pane:'fires', tileSize:512, maxZoom:19}).addTo(fireLayer)));
+fireLayer.addTo(map);
+$('fireTog').onchange = e => e.target.checked ? fireLayer.addTo(map) : map.removeLayer(fireLayer);
+function fireWeather(r){
+  const f=r.fb||{}, rh=f.rhMin, g=r.gust||0, t=r.tmax, dry=(r.rain||0)<1;
+  if(rh==null || t==null || !dry) return null;
+  if(t>=32 && rh<=25 && g>=35) return 'High';
+  if(t>=28 && rh<=35 && g>=20) return 'Moderate';
+  return null;
+}
+let fireNearHTML='', fireCount=null, wildfires=[]; const wfLayer = L.layerGroup().addTo(map);
+function countFirePixels(id, day, bbox){
+  return new Promise(res=>{
+    const img=new Image(); img.crossOrigin='anonymous';
+    img.onload=()=>{ try{ const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0);
+      const d=x.getImageData(0,0,256,256).data; let n=0; for(let i=3;i<d.length;i+=4) if(d[i]>40) n++; res(n); }catch(e){ res(null); } };
+    img.onerror=()=>res(null);
+    img.src=`${GIBS4326}?SERVICE=WMS&REQUEST=GetMap&VERSION=1.1.1&SRS=EPSG:4326&STYLES=&FORMAT=image/png&TRANSPARENT=true&WIDTH=256&HEIGHT=256&LAYERS=${id}&TIME=${day}&BBOX=${bbox.join(',')}`;
+  });
+}
+async function checkFires(){
+  if(!pin) return; const R=0.45, cos=Math.max(.2,Math.cos(pin.lat*Math.PI/180));
+  const bbox=[pin.lng-R/cos, pin.lat-R, pin.lng+R/cos, pin.lat+R].map(v=>v.toFixed(4));
+  const counts = await Promise.all([1,0].flatMap(n=> FIRE_LAYERS.map(id=> countFirePixels(id, dayStr(n), bbox))));
+  const ok = counts.filter(v=>v!=null);
+  fireCount = ok.length ? Math.round(Math.max(...ok) / 6) : null;   // ~6 drawn pixels per detection at this scale
+  renderFire();
+}
+async function loadWildfireEvents(){
+  try{ const now=new Date(), from=new Date(Date.now()-14*864e5);
+    const r=await fetch(`https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventlist=WF&fromdate=${ymd(from)}&todate=${ymd(now)}&alertlevel=green;orange;red`); if(!r.ok) return;
+    const js=await r.json();
+    wfLayer.clearLayers();
+    wildfires=(js.features||[]).filter(f=>{ const p=f.properties||{}; return String(p.iscurrent).toLowerCase()==='true' || (p.todate && Date.now()-Date.parse(p.todate) < 3*864e5); })
+      .map(f=>({lat:f.geometry.coordinates[1], lng:f.geometry.coordinates[0], alert:(f.properties.alertlevel||'green').toLowerCase(), country:f.properties.country||'', desc:f.properties.description||f.properties.name||'Wildfire', report:f.properties.url&&f.properties.url.report}));
+    wildfires.forEach(w=>{ const ic=L.divIcon({className:'',html:'<div style="font-size:18px;filter:drop-shadow(0 0 3px #000)">🔥</div>',iconSize:[20,20],iconAnchor:[10,10]});
+      L.marker([w.lat,w.lng],{icon:ic}).addTo(wfLayer).bindPopup(`<b>🔥 ${w.desc}</b>${w.country?'<br>'+w.country:''}<br>GDACS alert: <b style="color:${ALERT_COL[w.alert]}">${w.alert}</b>${w.report?`<br><a href="${w.report}" target="_blank" rel="noopener" style="color:#5ec8ff">GDACS report ↗</a>`:''}`); });
+    renderFire();
+  }catch(e){}
+}
+function renderFire(){
+  fireNearHTML='';
+  let near=null; if(pin) wildfires.forEach(w=>{ const d=km(pin,w); if(d<300 && (!near||d<near.d)) near={d,w}; });
+  if(near) fireNearHTML += `<span class="al ${near.w.alert==='red'||near.w.alert==='orange'?'sev':'hot'}">🔥 Major wildfire ${Math.round(near.d)} km away${near.w.country?' ('+near.w.country+')':''} · GDACS ${near.w.alert}</span>`;
+  if(fireCount!=null && fireCount>=1) fireNearHTML += `<span class="al hot">🔥 Fires detected within ~50 km in the last 2 days (≈${fireCount} hotspot${fireCount>1?'s':''})</span>`;
+  const fw = lastRows ? spans(lastRows, r=> fireWeather(r)) : [];
+  const fwTxt = fw.length ? fw.map(s=>{ const hi=s.items.some(r=>fireWeather(r)==='High'); return `<b>${hi?'High':'Moderate'}</b> ${range(s)}`; }).join(', ') : 'none expected';
+  $('fireInfo').innerHTML = (fireCount==null ? 'Satellite fire count near the pin is unavailable right now (the map layer may still show fires).' :
+     fireCount ? `Satellite fire detections within ~50 km of the pin in the last 2 days: <b>≈${fireCount}</b> (red/orange dots on the map; farm-residue burning shows up too).` :
+     'No satellite fire detections within ~50 km of the pin in the last 2 days.') +
+    `<br>Fire weather (hot, dry and windy days in the forecast): ${fwTxt}.` +
+    ` Detections come from NASA VIIRS (375 m) and can miss small or cloud-covered fires.`;
+  renderAlerts();
+}
+
+/* ---------- air quality (CAMS via Open-Meteo, India AQI scale) ---------- */
+const BP = { pm25:[[0,30,0,50],[30,60,50,100],[60,90,100,200],[90,120,200,300],[120,250,300,400],[250,380,400,500]],
+             pm10:[[0,50,0,50],[50,100,50,100],[100,250,100,200],[250,350,200,300],[350,430,300,400],[430,510,400,500]] };
+const AQC = [[50,'Good','#3fbf62'],[100,'Satisfactory','#a3c853'],[200,'Moderate','#ffe14d'],[300,'Poor','#f29c33'],[400,'Very poor','#e93f33'],[1e9,'Severe','#b7322a']];
+function sub(c, bps){ if(c==null) return null; for(const [lo,hi,ilo,ihi] of bps) if(c<=hi) return ilo + (c-lo)*(ihi-ilo)/(hi-lo); return 500; }
+const aqCat = v => AQC.find(a=> v<=a[0]);
+let aqHTML='';
+async function loadAir(lat,lng){
+  try{
+    const j = await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lng}&hourly=pm2_5,pm10,dust,us_aqi&past_days=1&forecast_days=5&timezone=auto`)).json();
+    const H=j.hourly, now=Date.now(), byDay={};
+    H.time.forEach((t,i)=>{ const d=t.slice(0,10), o=byDay[d]||(byDay[d]={p25:[],p10:[],dust:0}); if(H.pm2_5[i]!=null) o.p25.push(H.pm2_5[i]); if(H.pm10[i]!=null) o.p10.push(H.pm10[i]); if(H.dust&&H.dust[i]!=null) o.dust=Math.max(o.dust,H.dust[i]); });
+    const avg=a=> a.length? a.reduce((x,y)=>x+y,0)/a.length : null;
+    // "now": average of the 24 hours up to the current hour
+    const idx = H.time.findIndex(t=> Date.parse(t) > now) - 1, from=Math.max(0, idx-23);
+    const p25n=avg(H.pm2_5.slice(from,idx+1).filter(v=>v!=null)), p10n=avg(H.pm10.slice(from,idx+1).filter(v=>v!=null));
+    const aqiNow = Math.round(Math.max(sub(p25n,BP.pm25)||0, sub(p10n,BP.pm10)||0)), cNow=aqCat(aqiNow);
+    const today = (fc&&fc.daily) ? fc.daily.time[0] : H.time[idx].slice(0,10);
+    const days = Object.keys(byDay).filter(d=> d>=today).slice(0,5).map(d=>{ const o=byDay[d], a=avg(o.p25), b=avg(o.p10), s25=sub(a,BP.pm25)||0, s10=sub(b,BP.pm10)||0;
+      return {d, a, b, aqi:Math.round(Math.max(s25,s10)), main: s25>=s10?'PM2.5':'PM10', dust:o.dust}; });
+    $('aqNow').innerHTML = `Now (last 24 h average): <b style="color:${cNow[2]}">AQI ${aqiNow} · ${cNow[1]}</b> · PM2.5 ${p25n!=null?Math.round(p25n):'–'} µg/m³ · PM10 ${p10n!=null?Math.round(p10n):'–'} µg/m³.
+      Forecast from the CAMS global model (~40 km), so it shows the regional picture, not a single street. Official station readings: <a href="https://airquality.cpcb.gov.in/AQI_India/" target="_blank" rel="noopener">CPCB</a>.`;
+    $('aqDays').innerHTML = days.map(x=>{ const c=aqCat(x.aqi); return `<div class="aq"><b>${fmtDay(x.d)}</b><div class="v" style="color:${c[2]}">${x.aqi}</div><span class="c" style="background:${c[2]}">${c[1]}</span>
+      <div class="muted">PM2.5 ${x.a!=null?Math.round(x.a):'–'}</div><div class="muted">PM10 ${x.b!=null?Math.round(x.b):'–'}</div>${x.dust>=100?`<div class="muted">🏜 dust ${Math.round(x.dust)}</div>`:''}</div>`; }).join('');
+    aqHTML='';
+    spans(days, x=> x.aqi>200).forEach(s=>{ const top=s.items.reduce((a,b)=> b.aqi>a.aqi?b:a), c=aqCat(top.aqi);
+      aqHTML += `<span class="al ${top.aqi>300?'sev':'hot'}">🌫 ${c[1]} air quality ${s.items.length>1?fmtDay(s.items[0].d)+' – '+fmtDay(s.items[s.items.length-1].d):fmtDay(s.items[0].d)} · AQI up to ${top.aqi} (${top.main})</span>`; });
+    renderAlerts();
+  }catch(e){ $('aqNow').textContent='Air-quality forecast unavailable right now. Try ↻ in a moment.'; $('aqDays').innerHTML=''; }
+}
+
+/* ---------- panel: hide / show ---------- */
+function setFold(min){ $('panel').classList.toggle('min',min); $('fold').textContent = min ? '▴ Show' : '▾ Hide'; try{ localStorage.setItem('etm-fold', min?'1':'0'); }catch(e){} }
+$('bar').onclick = e => setFold(!$('panel').classList.contains('min'));
+try{ if(localStorage.getItem('etm-fold')==='1') setFold(true); }catch(e){}
+document.querySelectorAll('details.sec').forEach(d=>{ try{ const v=localStorage.getItem('etm-'+d.id); if(v!=null) d.open = v==='1'; }catch(e){}
+  d.addEventListener('toggle', ()=>{ try{ localStorage.setItem('etm-'+d.id, d.open?'1':'0'); }catch(e){} }); });
+let lastRows = null;
+
 function render(){
   if(!fc) return;
   const D=fc.daily, terr=$('terrain').value, days=$('days'); days.innerHTML=''; const FB = flashByDay();
   const rows = D.time.map((t,i)=>{ const tmax=D.temperature_2m_max[i], n = normals ? normals[doy(t)] : null, dep = (n!=null && tmax!=null) ? tmax-n : null;
     return {t, i, tmax, tmin:D.temperature_2m_min[i], feel:D.apparent_temperature_max[i], rain:D.precipitation_sum[i], wind:D.wind_speed_10m_max[i], gust:D.wind_gusts_10m_max[i], code:D.weather_code[i], n, dep, hw:classify(tmax,dep,terr), ff:flashLevel(FB[t]), fb:FB[t]}; });
+  rows.forEach(r=> r.fw = fireWeather(r)); lastRows = rows;
   rows.forEach(r=>{
     const el=document.createElement('div'); el.className='day'+(r.hw?' '+r.hw:'');
     const w = windCls(r.gust||0), rn = rainCls(r.rain||0);
@@ -1088,7 +1221,7 @@ function render(){
       <div class="muted">💨 ${r.gust!=null?Math.round(r.gust):'–'} km/h</div>
       <div class="muted">💧 ${r.rain!=null?r.rain.toFixed(r.rain<10?1:0):'–'} mm</div>
       ${r.hw?`<div class="f" style="color:${r.hw==='shw'?'#ff8080':'#ffab85'}">${r.hw==='shw'?'SEVERE HEAT WAVE':'HEAT WAVE'}</div>`:''}
-      ${w?`<div class="f" style="color:#8fd3ff">${w[0].toUpperCase()}</div>`:''}${rn?`<div class="f" style="color:#b9adff">${rn[0].toUpperCase()}</div>`:''}${r.ff?`<div class="f" style="color:#7fe0ff">FLASH FLOOD: ${r.ff.toUpperCase()}</div>`:''}`;
+      ${w?`<div class="f" style="color:#8fd3ff">${w[0].toUpperCase()}</div>`:''}${rn?`<div class="f" style="color:#b9adff">${rn[0].toUpperCase()}</div>`:''}${r.ff?`<div class="f" style="color:#7fe0ff">FLASH FLOOD: ${r.ff.toUpperCase()}</div>`:''}${r.fw?`<div class="f" style="color:#ffb36b">FIRE WEATHER: ${r.fw.toUpperCase()}</div>`:''}`;
     days.appendChild(el);
   });
   // alerts summary
@@ -1105,15 +1238,20 @@ function render(){
     const wetDays = rows.filter(r=> (r.rain||0) >= 2.5).length;
     $('waterInfo').innerHTML = `💧 Rain: <b>${Math.round(wk)} mm</b> next 7 days, <b>${Math.round(tot)} mm</b> next 16 days (${wetDays} rainy days) · 🌱 Topsoil now <b>${soilWord(sm0)}</b>${sm0!=null?` (${sm0.toFixed(2)} m³/m³)`:''}${relief!=null?` · ⛰ Terrain: ${relief>=150?'hilly':'fairly flat'} (${Math.round(relief)} m relief within ~2 km)`:''}.<br>
       Flash-flood potential is an indicative score from forecast rain bursts (3-hour and daily totals), soil wetness and local terrain, not an official warning. For official flash-flood guidance see <a href="https://mausam.imd.gov.in/" target="_blank" rel="noopener">IMD</a>.`; }
+  spans(rows, r=> r.fw).forEach(s=>{ const hi=s.items.some(r=>r.fw==='High'); out.push(`<span class="al ${hi?'sev':'hot'}">🔥 ${hi?'High':'Moderate'} fire weather ${range(s)} · hot, dry and windy</span>`); });
   const hot = rows.filter(r=>r.dep!=null && r.dep>=3 && !r.hw);
   if(!runs.length && hot.length) out.push(`<span class="al hot">🌡 Warmer than normal on ${hot.length} of 16 days (up to +${Math.max(...hot.map(r=>r.dep)).toFixed(1)}°)</span>`);
-  if(!out.length) out.push(`<span class="al ok">✓ No heat wave, damaging wind, heavy rain or flash-flood potential in the 16-day forecast</span>`);
+  if(!out.length) out.push(`<span class="al ok">✓ No heat wave, damaging wind, heavy rain, flash-flood or fire-weather risk in the 16-day forecast</span>`);
   alertHTML = out.join('');
-  renderAlerts();
+  renderFire();
   drawChart(rows, terr);
   $('hint').firstChild.textContent = `16-day forecast from Open-Meteo (best-match weather models), fetched ${fc.fetched.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}, compared with the 1991–2020 normal for the same dates (ERA5${normals?'':', loading…'}). Heat waves use IMD criteria (${THR[terr]} °C minimum for ${terr}). Global models soften cyclone winds and rain near the eye, so treat values as minimums and follow official warnings: `;
 }
-function renderAlerts(){ $('alerts').innerHTML = (nearestHTML||'') + (floodNearHTML||'') + (riverHTML||'') + (alertHTML||''); }
+function renderAlerts(){
+  $('alerts').innerHTML = (nearestHTML||'') + (floodNearHTML||'') + (riverHTML||'') + (fireNearHTML||'') + (aqHTML||'') + (alertHTML||'');
+  const n = $('alerts').querySelectorAll('.al:not(.ok)').length, place = $('place').textContent;
+  $('sum').textContent = pin ? `📍 ${place} · ${n ? '⚠ '+n+' alert'+(n>1?'s':'') : '✓ no alerts'}` : '📍 Tap the map or search a place';
+}
 let floodNearHTML='';
 function spans(rows, test){ const out=[]; let cur=null; rows.forEach(r=>{ if(test(r)){ if(!cur){cur={items:[]};out.push(cur);} cur.items.push(r);} else cur=null; }); return out; }
 function range(s){ const a=s.items[0].t, b=s.items[s.items.length-1].t; return a===b ? fmtDay(a) : `${fmtDay(a)} – ${fmtDay(b)}`; }
@@ -1161,7 +1299,7 @@ function saveHash(){
 }
 map.on('moveend', saveHash);
 window.addEventListener('resize', fitHeader);
-setInterval(()=>{ loadCyclones(); loadFloodEvents(); if(pin) loadForecast(true); }, 30*60*1000);   // refresh every 30 min while open
+setInterval(()=>{ loadCyclones(); loadFloodEvents(); loadWildfireEvents(); if(pin) loadForecast(true); }, 30*60*1000);   // refresh every 30 min while open
 
 (function init(){
   fitHeader();
@@ -1170,7 +1308,7 @@ setInterval(()=>{ loadCyclones(); loadFloodEvents(); if(pin) loadForecast(true);
     if(p.get('c')){ const [a,b,z]=p.get('c').split(',').map(Number); map.setView([a,b], z||5); }
     if(p.get('p')){ const [a,b]=p.get('p').split(',').map(Number); p0=L.latLng(a,b); if(!p.get('c')) map.setView(p0,6); }
   }catch(e){}
-  loadCyclones(); loadFloodEvents();
+  loadCyclones(); loadFloodEvents(); loadWildfireEvents();
   if(p0) setPin(p0); else toast('Tap any place to see its 16-day heat, wind and rain outlook');
   saveHash();
 })();
