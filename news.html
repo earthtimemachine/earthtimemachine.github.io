@@ -797,6 +797,7 @@ details.sec>summary .muted{font-weight:400}
     <div class="chips" id="topics" style="padding-top:6px">
       <span class="chip on" data-t="all">All news</span><span class="chip" data-t="weather">🌧 Weather &amp; disasters</span><span class="chip" data-t="farm">🌾 Farming</span>
       <span class="chip" data-t="biz">🏗 Business &amp; projects</span><span class="chip" data-t="civic">🏛 Politics &amp; civic</span><span class="chip" data-t="crime">🚨 Crime &amp; safety</span>
+      <label class="tog" style="margin-left:4px"><input type="checkbox" id="locOnly" checked> <span id="locLbl">Only local news outlets</span></label>
       <label class="tog" style="margin-left:4px"><input type="checkbox" id="engOnly" checked> English only</label>
     </div>
     <details class="sec" id="secNews" open>
@@ -804,8 +805,8 @@ details.sec>summary .muted{font-weight:400}
       <div id="news" class="list"><div class="muted" style="padding:0 0 12px">Tap the map or search a place.</div></div>
     </details>
     <div class="sec"><div class="hint" style="padding-top:10px">
-      Headlines from the <a href="https://www.gdeltproject.org/" target="_blank" rel="noopener">GDELT Project</a>, a free index of world news (archive from 2017; up to 3 months per search). Each headline links to the original publisher.
-      Matching is by place name, so a few stories may be about another place with the same name. <span id="moreLinks"></span>
+      Local headlines found through the <a href="https://www.gdeltproject.org/" target="_blank" rel="noopener">GDELT Project</a> news index (archive from 2017; up to 3 months per search), limited to outlets in the place's country. Each headline links to the original publisher.
+      Stories are matched by place name, so a few may be about another place with the same name. <span id="moreLinks"></span>
     </div></div>
   </div>
 </section>
@@ -850,7 +851,7 @@ const pad2 = n => String(n).padStart(2,'0');
 const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
 const addDays = (s,n) => { const d=new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
 const prettyDay = s => new Date(s+'T00:00:00Z').toLocaleDateString(undefined,{timeZone:'UTC',weekday:'short',day:'numeric',month:'short',year:'numeric'});
-let scopes=[], scope=0, topic='all', mapDates=null, startOverride=null, gen=0, lastReq=0;
+let country='', scopes=[], scope=0, topic='all', mapDates=null, startOverride=null, gen=0, lastReq=0;
 function readMapDates(){ try{ return JSON.parse(localStorage.getItem('etm-date')||'null'); }catch(e){ return null; } }
 $('endDate').max = todayStr(); $('endDate').min='2017-01-01';
 (function initDates(){
@@ -873,6 +874,7 @@ function drawDateChips(){
 $('endDate').onchange = ()=>{ startOverride=null; drawDateChips(); load(); saveHash(); };
 $('span').onchange = ()=>{ startOverride=null; drawDateChips(); load(); };
 $('engOnly').onchange = ()=> load();
+$('locOnly').onchange = ()=> load();
 $('topics').querySelectorAll('[data-t]').forEach(ch=> ch.onclick=()=>{ topic=ch.dataset.t; $('topics').querySelectorAll('[data-t]').forEach(x=>x.classList.toggle('on',x===ch)); load(); });
 
 async function onPin(){
@@ -882,7 +884,8 @@ async function onPin(){
     const j = await jget(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=14&accept-language=en&lat=${pin.lat}&lon=${pin.lng}`);
     if(p0!==pin) return; const a=j.address||{};
     const local=a.village||a.town||a.city||a.suburb||a.municipality, dist=a.state_district||a.county||a.city_district, st=a.state, ct=a.country;
-    [[local,local],[dist, dist && dist.replace(/ district$/i,'')],[st,st],[ct,ct]].forEach(([label,q])=>{ if(q && !scopes.some(s=>s.q===q)) scopes.push({label, q}); });
+    [[local,local],[dist, dist && dist.replace(/ district$/i,'')],[st,st]].forEach(([label,q])=>{ if(q && !scopes.some(s=>s.q===q)) scopes.push({label, q}); });
+    country = ct||''; $('locLbl').textContent = country ? `Only ${country} news outlets` : 'Only local news outlets';
     placeName = local||dist||st||ct||'Selected spot';
   }catch(e){}
   if(!scopes.length){ $('scopes').innerHTML='<span class="muted">No place name here — try tapping on land.</span>'; $('news').innerHTML=''; return; }
@@ -911,9 +914,10 @@ async function load(){
   let start = startOverride || addDays(end, -(+$('span').value)), clipped=false;
   if(start < addDays(end,-90)){ start = addDays(end,-90); clipped=true; }
   if(end < '2017-01-01'){ $('news').innerHTML='<div class="muted" style="padding:0 0 12px">The news archive starts in January 2017. Use the links below to search older news.</div>'; moreLinks(s,start,end); return; }
-  const q = `"${s.q}"` + (TOPIC[topic] ? ' '+TOPIC[topic] : '') + ($('engOnly').checked ? ' sourcelang:english' : '');
+  const sc = ($('locOnly').checked && country) ? ' sourcecountry:'+country.toLowerCase().replace(/[^a-z]/g,'') : '';
+  const q = `"${s.q}"` + (TOPIC[topic] ? ' '+TOPIC[topic] : '') + sc + ($('engOnly').checked ? ' sourcelang:english' : '');
   $('newsMeta').textContent = `${prettyDay(start)} → ${prettyDay(end)}, newest first${clipped?' (news search covers 3 months at a time: pick an earlier “Up to” date for older stories)':''}`;
-  $('news').innerHTML='<div class="muted" style="padding:0 0 12px">Searching world news…</div>'; moreLinks(s,start,end); updateSum();
+  $('news').innerHTML='<div class="muted" style="padding:0 0 12px">Searching local news…</div>'; moreLinks(s,start,end); updateSum();
   spin(true);
   try{
     const j = await gdelt(gdeltUrl(q, start, end)); if(my!==gen) return;
@@ -921,19 +925,26 @@ async function load(){
     const arts = (j.articles||[]).filter(a=>{ const k=(a.title||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim(); if(!k||seen.has(k)) return false; seen.add(k); return true; })
       .map(a=>({...a, iso: a.seendate ? `${a.seendate.slice(0,4)}-${a.seendate.slice(4,6)}-${a.seendate.slice(6,8)}T${a.seendate.slice(9,11)}:${a.seendate.slice(11,13)}:00Z` : null}))
       .sort((a,b)=> (b.iso||'').localeCompare(a.iso||''));
-    newsCount = arts.length; updateSum();
     if(!arts.length){
       const broader = scope < scopes.length-1 ? ` <a href="#" id="widen">Try ${esc(scopes[scope+1].label)}</a>` : '';
       $('news').innerHTML = `<div class="muted" style="padding:0 0 12px">No stories mention “${esc(s.label)}” in this period.${broader}</div>`;
       const w=$('widen'); if(w) w.onclick=e=>{ e.preventDefault(); scope++; drawScopes(); load(); };
       return;
     }
-    let html='', lastDay='';
-    arts.forEach(a=>{ const local = a.iso ? new Date(a.iso) : null, dkey = local ? local.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Undated';
+    const name = s.q.toLowerCase(), slug = name.replace(/[^a-z0-9]+/g,'-');
+    const about = a => (a.title||'').toLowerCase().includes(name) || (a.url||'').toLowerCase().includes(slug) || (a.url||'').toLowerCase().includes(name.replace(/\s+/g,''));
+    const main = arts.filter(about), rest = arts.filter(a=> !about(a));
+    const block = list => { let html='', lastDay='';
+    list.forEach(a=>{ const local = a.iso ? new Date(a.iso) : null, dkey = local ? local.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Undated';
       if(dkey!==lastDay){ html += `<div class="day">${esc(dkey)}</div>`; lastDay=dkey; }
       html += `<a class="na" href="${esc(a.url)}" target="_blank" rel="noopener">${a.socialimage?`<img src="${esc(a.socialimage)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=ph>📰</div>'">`:'<div class="ph">📰</div>'}
         <div style="min-width:0"><b>${esc(a.title)}</b><span class="muted">${esc(a.domain||'')}${local?' · '+local.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}${a.language&&a.language!=='English'?`<span class="lang">${esc(a.language)}</span>`:''}</span></div></a>`; });
-    $('news').innerHTML = html;
+    return html; };
+    newsCount = main.length; updateSum();
+    $('news').innerHTML = (main.length ? `<div class="day" style="color:var(--tx)">📍 About ${esc(s.label)} · ${main.length}</div>` + block(main)
+                                       : `<div class="muted" style="padding:6px 0">No headlines are about ${esc(s.label)} itself in this period.${scope < scopes.length-1 ? ` <a href="#" id="widen">Try ${esc(scopes[scope+1].label)}</a>` : ''}</div>`)
+      + (rest.length ? `<details style="margin-top:8px"><summary class="muted" style="cursor:pointer;padding:6px 0">Also mentioned in ${rest.length} other stor${rest.length>1?'ies':'y'} (tap to show)</summary>${block(rest)}</details>` : '');
+    const w=$('widen'); if(w) w.onclick=e=>{ e.preventDefault(); scope++; drawScopes(); load(); };
   }catch(e){
     if(my!==gen) return;
     $('news').innerHTML = e.message==='rate' ? '<div class="muted" style="padding:0 0 12px">The news service asks for a short pause between searches. Retrying in a few seconds…</div>'
