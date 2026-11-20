@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Earth Time Machine — Minerals & mining</title>
+<title>Earth Time Machine — Resources & economy</title>
 <style>/* Leaflet 1.9.4 (BSD-2) */
 /* required styles */
 
@@ -764,6 +764,11 @@ details.sec>summary .muted{font-weight:400}
 .it b{display:block;font-size:13.5px}
 .it .muted{font-size:12px}
 .grow{flex:1}
+.eco{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;padding:0 12px 8px}
+.ec{background:#0e141c;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ec h4{margin:0 0 4px;font-size:13px}
+.ec ol{margin:0;padding-left:18px;font-size:12.5px;line-height:1.45}
+.ec li span{color:var(--mut);font-size:11.5px}
 .emk{font-size:18px;filter:drop-shadow(0 0 2px #000) drop-shadow(0 0 2px #000)}
 
 </style>
@@ -771,7 +776,7 @@ details.sec>summary .muted{font-weight:400}
 <body>
 <div id="map"></div>
 <header id="top">
-  <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Minerals & mining</small></div>
+  <div class="brand"><span class="dot"></span>Earth Time Machine <small>· Resources & economy</small></div>
   <nav id="nav"><a href="./">🏠<span class="full"> Home</span></a><a href="daily.html">🛰 Daily</a><a href="hires.html">🔍 Hi-res<span class="full"> imagery</span></a><a href="hazards.html">🌀 Hazards<span class="full"> &amp; air</span></a><a href="history.html">📜 History<span class="full"> &amp; geology</span></a><a href="resources.html" class=on>⛏ Resources<span class="full"> &amp; mining</span></a><a href="explore.html">🍽 Explore<span class="full"> &amp; food</span></a><a href="news.html">📰 News</a></nav><script>try{var a=document.querySelector("#nav a.on"),n=document.getElementById("nav");n.scrollLeft=a.offsetLeft-n.clientWidth/2+a.clientWidth/2;}catch(e){}</script>
   <div id="searchWrap"><input id="search" placeholder="Search a place, or paste lat, lon" autocomplete="off"><div id="results"></div></div>
   <span id="spin"></span>
@@ -784,6 +789,16 @@ details.sec>summary .muted{font-weight:400}
       <select id="radius" class="btn sm"><option value="10000">10 km</option><option value="25000" selected>25 km</option><option value="50000">50 km</option></select>
       <span class="grow"></span><span id="count" class="muted"></span>
     </div>
+    <details class="sec" id="secEco" open>
+      <summary>🏙 Economy at a glance <span class="muted">top 3 in each</span></summary>
+      <div class="eco">
+        <div class="ec"><h4>🌾 Main crops</h4><ol id="ecoCrops"><li class="muted">–</li></ol></div>
+        <div class="ec"><h4>🛎 Services</h4><ol id="ecoServ"><li class="muted">–</li></ol></div>
+        <div class="ec"><h4>🏭 Manufacturing</h4><ol id="ecoMfg"><li class="muted">–</li></ol></div>
+        <div class="ec"><h4>🎓 Universities</h4><ol id="ecoUni"><li class="muted">–</li></ol></div>
+      </div>
+      <div class="hint" id="ecoNote">Crops from the district's Wikipedia article; services, factories and universities counted from OpenStreetMap within the chosen distance.</div>
+    </details>
     <div id="chips" class="chips"></div>
     <details class="sec" id="secSites" open>
       <summary>⛏ Mines, quarries &amp; metal works <span class="muted">from OpenStreetMap</span></summary>
@@ -861,7 +876,7 @@ function classify(t){
 let sites=[], filter=null, gen=0;
 $('radius').onchange = ()=> onPin();
 async function onPin(){
-  updateSum(); loadRock(); if(!pin) return;
+  updateSum(); loadRock(); if(!pin) return; loadEconomy();
   const my=++gen, R=+$('radius').value, ll=`${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}`;
   if(radiusCircle) map.removeLayer(radiusCircle);
   radiusCircle = L.circle(pin,{radius:R, color:'#ffc34d', weight:1.5, fill:false, dashArray:'5 5', interactive:false}).addTo(map);
@@ -926,6 +941,96 @@ async function loadRock(){
       <br><span class="muted">This is a general guide from regional geology maps, not proof that a deposit exists here.</span>`;
   }catch(e){ $('rockInfo').textContent='Geology service unavailable right now.'; }
 }
+/* ---------- economy at a glance ---------- */
+const CROPS = [['Rice (paddy)',/\b(rice|paddy)\b/g],['Cotton',/\bcotton\b/g],['Chillies',/\b(chill?ies|chill?i|chilli|mirchi)\b/g],['Tobacco',/\btobacco\b/g],
+  ['Groundnut',/\b(groundnuts?|peanuts?)\b/g],['Sugarcane',/\bsugar ?cane\b/g],['Maize',/\bmaize\b/g],['Wheat',/\bwheat\b/g],
+  ['Pulses',/\b(pulses|black gram|green gram|red gram|bengal gram|lentils?|chickpeas?|tur dal)\b/g],['Millets',/\b(millets?|jowar|bajra|ragi|sorghum)\b/g],
+  ['Mango',/\bmangoe?s?\b/g],['Banana',/\bbananas?\b/g],['Coconut',/\bcoconuts?\b/g],['Citrus (sweet lime, lemon)',/\b(citrus|sweet lime|mosambi|lemons?|oranges?)\b/g],
+  ['Turmeric',/\bturmeric\b/g],['Soybean',/\bsoy ?beans?\b/g],['Mustard',/\bmustard\b/g],['Tea',/\btea (gardens?|estates?|plantations?)\b/g],['Coffee',/\bcoffee\b/g],
+  ['Rubber',/\brubber\b/g],['Spices (pepper, cardamom)',/\b(black pepper|cardamom)\b/g],['Cashew',/\bcashews?\b/g],['Fish & shrimp farming',/\b(aquaculture|shrimps?|prawns?|fish farming|fisheries)\b/g],
+  ['Vegetables',/\bvegetables\b/g],['Fruits (orchards)',/\b(orchards?|horticulture)\b/g],['Jute',/\bjute\b/g],['Sunflower',/\bsunflowers?\b/g],['Onion',/\bonions?\b/g]];
+const SERVICES = [
+  ['IT & corporate offices','nwr(around:R,LL)["office"~"^(it|company|telecommunication|software|coworking|consulting)$"];'],
+  ['Healthcare','nwr(around:R,LL)["amenity"~"^(hospital|clinic|doctors|dentist|pharmacy)$"];'],
+  ['Retail & markets','nwr(around:R,LL)["shop"~"^(mall|supermarket|department_store|wholesale|electronics|car|clothes|jewelry|hardware|furniture)$"];nwr(around:R,LL)["amenity"="marketplace"];'],
+  ['Banking & finance','nwr(around:R,LL)["amenity"="bank"];nwr(around:R,LL)["office"~"^(financial|insurance|tax_advisor|accountant)$"];'],
+  ['Hotels & tourism','nwr(around:R,LL)["tourism"~"^(hotel|guest_house|resort|hostel|motel|attraction)$"];'],
+  ['Education & training','nwr(around:R,LL)["amenity"~"^(college|university|training|language_school|driving_school)$"];'],
+  ['Transport & logistics','nwr(around:R,LL)["building"="warehouse"];nwr(around:R,LL)["industrial"~"^(warehouse|port|logistics)$"];nwr(around:R,LL)["amenity"~"^(ferry_terminal|bus_station)$"];nwr(around:R,LL)["railway"="station"];'],
+  ['Government & public offices','nwr(around:R,LL)["office"="government"];nwr(around:R,LL)["amenity"~"^(townhall|courthouse|police|post_office)$"];'] ];
+const MFG = [['Food & agro processing',/food|\brice\b|rice mill|dairy|milk|sugar|oil mill|edible oil|cold storage|seafood|aqua|feed|spice|tobacco|beverage|bakery|flour|cashew|processing/],
+  ['Textiles & garments',/textile|spinning|cotton|garment|apparel|yarn|jute|weaving|handloom/], ['Pharma & chemicals',/pharma|chemical|drug|fertili[sz]|labs?\b|bulk drug|pesticide|paint/],
+  ['Metals & engineering',/steel|metal|foundry|engineering|forging|alloy|fabricat|machin|tools/], ['Automotive & parts',/\bauto|motor|vehicle|tyre|tire\b/],
+  ['Electronics & solar',/electronic|semiconductor|solar|battery|electrical/], ['Cement & building materials',/cement|brick|tiles?\b|ceramic|granite|concrete|stone|marble/],
+  ['Power generation',/power|thermal|energy|wind ?farm/], ['Paper, plastics & packaging',/paper|plastic|packag|polymer|rubber/],
+  ['Port & shipbuilding',/\bport\b|shipyard|harbour|harbor|dock/], ['Industrial parks & SEZs',/special economic zone|\bsez\b|industrial (park|estate|area|corridor)|apiic|midc|kiadb/]];
+let ecoGen=0;
+async function loadEconomy(){
+  const my=++ecoGen, R=+$('radius').value, LL=`${pin.lat.toFixed(5)},${pin.lng.toFixed(5)}`;
+  ['ecoCrops','ecoServ','ecoMfg','ecoUni'].forEach(id=> $(id).innerHTML='<li class="muted">loading…</li>');
+  // crops: Wikipedia district article
+  (async ()=>{
+    try{
+      const a = (await jget(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=en&lat=${pin.lat}&lon=${pin.lng}`)).address||{};
+      const dist=a.state_district||a.county||a.city, st=a.state||'';
+      const scores={}; let srcTitle='';
+      for(const q of [dist && `${dist} district ${st}`, st && `Agriculture in ${st}`, st].filter(Boolean)){
+        const sr = await jget(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(q)}&srlimit=1&format=json&origin=*`);
+        const title = sr.query && sr.query.search[0] && sr.query.search[0].title; if(!title) continue;
+        const ex = await jget(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=wiki&titles=${encodeURIComponent(title)}&format=json&origin=*`);
+        const txt = Object.values(ex.query.pages)[0].extract||'';
+        const secs = txt.split(/\n==+\s*/).filter(x=> /^(econom|agricult|crops?|farming|irrigation|horticult)/i.test(x));
+        const body = (secs.length ? secs.join('\n') : txt).toLowerCase();
+        CROPS.forEach(([n,re])=>{ const c=(body.match(re)||[]).length; if(c) scores[n]=(scores[n]||0)+c*(secs.length?2:1); });
+        if(!srcTitle) srcTitle=title;
+        if(Object.keys(scores).length>=3) break;
+      }
+      if(my!==ecoGen) return;
+      const top=Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      $('ecoCrops').innerHTML = top.length ? top.map(([n])=>`<li>${esc(n)}</li>`).join('') + (srcTitle?`<li style="list-style:none;margin-left:-18px"><span>from <a href="https://en.m.wikipedia.org/wiki/${encodeURIComponent(srcTitle.replace(/ /g,'_'))}" target="_blank" rel="noopener" style="color:var(--acc)">${esc(srcTitle)}</a></span></li>`:'') : '<li class="muted">No crop information found</li>';
+    }catch(e){ if(my===ecoGen) $('ecoCrops').innerHTML='<li class="muted">Unavailable right now</li>'; }
+  })();
+  // services: counts by sector
+  (async ()=>{
+    try{
+      const q = '[out:json][timeout:40];' + SERVICES.map(([,sel])=> `(${sel.replace(/R,LL/g, R+','+LL)});out count;`).join('');
+      const j = await overpass(q); if(my!==ecoGen) return;
+      const counts = (j.elements||[]).filter(e=>e.type==='count').map((e,i)=> [SERVICES[i][0], +(e.tags&&e.tags.total)||0]);
+      const top = counts.filter(c=>c[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      $('ecoServ').innerHTML = top.length ? top.map(([n,c])=>`<li>${esc(n)} <span>· ${c.toLocaleString()} places</span></li>`).join('') : '<li class="muted">Few services mapped here</li>';
+    }catch(e){ if(my===ecoGen) $('ecoServ').innerHTML='<li class="muted">Map service busy, try again</li>'; }
+  })();
+  // manufacturing + universities
+  (async ()=>{
+    try{
+      const RU = Math.max(R, 25000);
+      const q = `[out:json][timeout:40];(
+        nwr(around:${R},${LL})["man_made"="works"];
+        nwr(around:${R},${LL})["industrial"]["industrial"!~"^(mine|quarry|warehouse)$"];
+        nwr(around:${R},${LL})["landuse"="industrial"]["name"];
+        nwr(around:${R},${LL})["building"~"^(industrial|factory)$"]["name"];
+        nwr(around:${R},${LL})["power"="plant"];
+      );out center tags 600;
+      (nwr(around:${RU},${LL})["amenity"="university"];);out center tags 60;
+      (nwr(around:${RU},${LL})["amenity"="college"]["name"];);out center tags 60;`;
+      const j = await overpass(q); if(my!==ecoGen) return;
+      const els=j.elements||[], here=[pin.lat,pin.lng];
+      const mfgCount={}, mfgEx={};
+      els.filter(e=> !/^(university|college)$/.test((e.tags||{}).amenity||'')).forEach(e=>{ const t=e.tags||{};
+        const txt=[t.name,t.product,t.industrial,t.operator,t['plant:source'],t.power==='plant'?'power':''].filter(Boolean).join(' ').toLowerCase();
+        const m = MFG.find(([,re])=> re.test(txt)); if(!m) return; mfgCount[m[0]]=(mfgCount[m[0]]||0)+1; if(t.name && !(mfgEx[m[0]]||[]).includes(t.name)) (mfgEx[m[0]] ||= []).push(t.name); });
+      const topM = Object.entries(mfgCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+      $('ecoMfg').innerHTML = topM.length ? topM.map(([n,c])=>`<li>${esc(n)} <span>· ${c} site${c>1?'s':''}${mfgEx[n]?' · e.g. '+esc(mfgEx[n][0]).slice(0,40):''}</span></li>`).join('') : '<li class="muted">Few factories mapped here</li>';
+      const unis = els.filter(e=> (e.tags||{}).amenity==='university' && e.tags.name), cols = els.filter(e=> (e.tags||{}).amenity==='college' && e.tags.name);
+      const rank = list => list.map(e=>({e, d:km(here, elLL(e)||here), notable: !!(e.tags.wikidata||e.tags.wikipedia)})).sort((a,b)=> (b.notable-a.notable) || a.d-b.d);
+      const seen=new Set(); const pick = [...rank(unis), ...rank(cols)].filter(x=>{ const k=x.e.tags.name.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; }).slice(0,3);
+      $('ecoUni').innerHTML = pick.length ? pick.map(x=>{ const t=x.e.tags, w=t.wikipedia ? `https://en.m.wikipedia.org/wiki/${encodeURIComponent((t.wikipedia.split(':').slice(1).join(':')||t.wikipedia).replace(/ /g,'_'))}` : (t.website||'');
+          return `<li>${w?`<a href="${esc(w)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline dotted">${esc(t['name:en']||t.name)}</a>`:esc(t['name:en']||t.name)} <span>· ${fmtKm(x.d)}${t.amenity==='college'?' · college':''}</span></li>`; }).join('')
+        : `<li class="muted">None within ${Math.round(RU/1000)} km</li>`;
+    }catch(e){ if(my===ecoGen){ $('ecoMfg').innerHTML='<li class="muted">Map service busy, try again</li>'; $('ecoUni').innerHTML='<li class="muted">Map service busy, try again</li>'; } }
+  })();
+}
+
 function updateSum(){ $('sum').textContent = pin ? `📍 ${placeName||'Selected spot'}${sites.length?` · ⛏ ${sites.length} sites`:''}` : '📍 Tap the map or search a place'; }
 
 
