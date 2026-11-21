@@ -72,7 +72,7 @@ export function startSwipe(leftLabel, rightLabel) {
   let pct = .5;
   const clip = () => { const s = map.getSize(), nw = map.containerPointToLayerPoint([0, 0]), se = map.containerPointToLayerPoint(s), cx = map.containerPointToLayerPoint([s.x * pct, 0]).x;
     paneL.style.clip = `rect(${nw.y}px, ${cx}px, ${se.y}px, ${nw.x}px)`; wrap.style.left = (pct * 100) + '%';
-    tagL.style.left = '10px'; tagR.style.right = '54px'; };
+    tagL.style.left = '10px'; tagR.style.right = '10px'; };
   const knob = wrap.querySelector('.knob'); let drag = false;
   knob.addEventListener('pointerdown', e => { drag = true; knob.setPointerCapture(e.pointerId); e.preventDefault(); e.stopPropagation(); });
   knob.addEventListener('pointermove', e => { if (!drag) return; const r = host.getBoundingClientRect(); pct = Math.min(.97, Math.max(.03, (e.clientX - r.left) / r.width)); clip(); });

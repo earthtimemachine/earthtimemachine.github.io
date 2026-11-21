@@ -27,6 +27,7 @@ let root, src = 'daily', mode = {}, product = PRODUCTS[0][0], items = [], sel = 
 const group = lensGroup('imagery');
 const q = s => $(s, root);
 
+const dayLabel = d => d.slice(0, 4) === today().slice(0, 4) ? fmtDay(d) : fmtDate(d);
 /* ---------- layer factories ---------- */
 function dailyLayer(date, pane) { return L.tileLayer.wms(GIBS3857, { layers: product, time: date, format: 'image/jpeg', transparent: false, version: '1.1.1', tileSize: 512, pane, maxZoom: 19, attribution: 'Imagery © NASA GIBS / EOSDIS' }); }
 const pcTile = (coll, id, extra) => `${PC}/data/v1/item/tiles/WebMercatorQuad/{z}/{x}/{y}@1x?collection=${coll}&item=${encodeURIComponent(id)}&${extra}`;
@@ -68,7 +69,7 @@ async function buildDaily(my) {
     const cands = m === 'day' ? [anchor] : [0, 1, 2, 3, 4, 5, 6].map(k => addDays(anchor, -k));
     const ok = cands.filter(d => d >= prodStart && d <= today()); if (ok.length) groups.push(ok);
   }
-  items = groups.map(g => ({ key: g[0], date: g[0], label: fmtDay(g[0]), sub: 'scoring…', pending: true, cands: g,
+  items = groups.map(g => ({ key: g[0], date: g[0], label: dayLabel(g[0]), sub: 'scoring…', pending: true, cands: g,
     layer: pane => dailyLayer(itemsDate(g), pane), thumb: (el, size) => { const im = new Image(); im.alt = ''; im.src = dailyThumbUrl(itemsDate(g), size); im.style.cssText = `width:${size}px;height:${size}px;object-fit:cover;position:static`; el.innerHTML = ''; el.appendChild(im); } }));
   drawStrip();
   // pick the clearest day in each group (newest groups first)
@@ -79,7 +80,7 @@ async function buildDaily(my) {
     if (my !== gen) return;
     const good = scored.filter(x => x.s.ok).sort((a, b) => bad(a.s) - bad(b.s));
     if (!good.length) { it.sub = 'no image'; it.pending = false; it.dead = true; updateCard(i); return; }
-    const b = good[0]; it.date = it.key = b.d; it.label = fmtDay(b.d); it.cloud = b.s.cloud; it.nodata = b.s.nodata; it.pending = false; it.chosen = b.d;
+    const b = good[0]; it.date = it.key = b.d; it.label = dayLabel(b.d); it.cloud = b.s.cloud; it.nodata = b.s.nodata; it.pending = false; it.chosen = b.d;
     it.sub = b.s.nodata > .5 ? 'no pass here' : b.s.cloud == null ? '' : `☁ ${Math.round(b.s.cloud * 100)}%`;
     updateCard(i);
   });
@@ -161,13 +162,13 @@ function updateCard(i) {
   const c = q(`.card[data-i="${i}"]`), it = items[i]; if (!c) return;
   c.querySelector('.cap').innerHTML = `<b>${esc(it.label)}</b><span>${esc(it.sub || '')}</span>`;
   if (src === 'daily' && it.chosen) it.thumb(c.querySelector('.tile-view'), parseInt(c.querySelector('.tile-view').style.width));
-  c.style.opacity = it.dead ? .45 : '';
+  c.style.opacity = it.dead ? .45 : ''; fillCmp();
 }
-function markCards() { $$('.card', q('.strip')).forEach(c => { const it = items[+c.dataset.i]; c.classList.toggle('on', !!sel && it === sel); c.classList.toggle('left', !!left && it === left); }); }
+function markCards() { fillCmp(); $$('.card', q('.strip')).forEach(c => { const it = items[+c.dataset.i]; c.classList.toggle('on', !!sel && it === sel); c.classList.toggle('left', !!left && it === left); }); }
 function choose(it, quiet) {
   if (!it || it.dead) return;
   if (swipeOn() && side === 'left') { left = it; showLeft(); }
-  else { sel = it; showMain(); if (!quiet && it.date) setDate(it.date, state.date2); }
+  else { sel = it; showMain(); if (swipeOn()) showLeft(); if (!quiet && it.date) setDate(it.date, state.date2); }
   markCards(); describe();
 }
 function showMain() {
@@ -178,13 +179,13 @@ function showMain() {
   if (old) { let done = false; const rm = () => { if (!done) { done = true; group.removeLayer(old); } }; mainLayer.once('load', rm); setTimeout(rm, 2500); }
   zoomBanner();
 }
-function showLeft() { if (leftLayer) group.removeLayer(leftLayer); if (!left) return; leftLayer = makeLayer(left, SWIPE_PANES.left).addTo(group); startSwipe(left.label, sel ? sel.label : fmtDay(state.date)); state.date2 = left.date; }
+function showLeft() { if (leftLayer) group.removeLayer(leftLayer); if (!left) return; leftLayer = makeLayer(left, SWIPE_PANES.left).addTo(group); startSwipe(left.label, sel ? sel.label : dayLabel(state.date)); state.date2 = left.date; }
 function describe() {
   const it = sel, s = SOURCES[src];
   let t = '';
   if (src === 'daily') t = `Showing <b>${fmtDate(it ? it.date : state.date)}</b> · ${PRODUCTS.find(p => p[0] === product)[1]}${it && it.cloud != null ? ` · ☁ about ${Math.round(it.cloud * 100)}% cloud near the pin` : ''}`;
   else if (it) t = `Showing <b>${esc(it.label)}</b>${it.sub ? ' · ' + esc(it.sub) : ''}`;
-  if (left) t += `<br>Comparing with <b>${esc(left.label)}</b> on the left side.`;
+  if (left) t = `Before <b>${esc(left.label)}</b> (left) · After <b>${esc(sel ? sel.label : dayLabel(state.date))}</b> (right)`;
   q('.now').innerHTML = t || `<span class="muted">${esc(s.what)}</span>`;
 }
 function zoomBanner() { const z = map.getZoom(), s = SOURCES[src]; mapBanner(z < s.minZ ? `Zoom in to see ${s.label} imagery` : ''); }
@@ -204,15 +205,35 @@ function play() {
 /* ---------- compare ---------- */
 function toggleCompare(on) {
   on = on ?? !swipeOn();
-  q('[data-act=compare]').classList.toggle('on', on); q('.sides').classList.toggle('hidden', !on);
+  q('[data-act=compare]').classList.toggle('on', on); q('[data-act=compare]').textContent = on ? 'Stop comparing' : 'Compare dates'; q('.cmp').classList.toggle('hidden', !on);
   if (!on) { stopSwipe(); if (leftLayer) group.removeLayer(leftLayer); leftLayer = null; left = null; state.date2 = null; setDate(state.date, null); showMain(); markCards(); describe(); return; }
   stopPlay();
   const avail = items.filter(i => !i.dead && !i.pending);
-  if (!sel) sel = avail[avail.length - 1] || null;
-  left = avail.find(i => i !== sel && i.date <= addMonths(sel ? sel.date : state.date, -12)) || avail[0] || null;
+  if (!sel) sel = avail[avail.length - 1] || (src === 'daily' ? dayItem(state.date) : null);
+  left = avail.find(i => i !== sel && i.date <= addMonths(sel ? sel.date : state.date, -12)) || avail.find(i => i !== sel) || (src === 'daily' ? dayItem(addMonths(sel ? sel.date : state.date, -12)) : null);
   startSwipe(left ? left.label : '', sel ? sel.label : '');
   showMain(); showLeft(); setSide('left'); markCards(); describe();
+  if (!left) toast('Wait for the pictures to load, then pick Before and After.');
   if (left) setDate(state.date, left.date);
+}
+function dayItem(d) { return { key: 'd' + d, date: d, label: dayLabel(d), custom: true, layer: pane => dailyLayer(d, pane) }; }
+function setCmp(sd, it) {
+  if (it.dead) return toast('No image that day here. Pick another.');
+  if (sd === 'left') { left = it; showLeft(); setDate(state.date, it.date); }
+  else { sel = it; showMain(); showLeft(); setDate(it.date, left ? left.date : state.date2); }
+  markCards(); describe();
+}
+function fillCmp() {
+  if (!root || q('.cmp').classList.contains('hidden')) return;
+  const daily = src === 'daily';
+  for (const [sd, cur] of [['left', left], ['right', sel]]) {
+    const sx = q(`.cmpSel[data-side="${sd}"]`), dx = q(`.cmpDate[data-side="${sd}"]`);
+    const opts = items.map((it, i) => it.dead ? '' : `<option value="${i}">${esc(it.label)}${it.sub && !it.pending ? ' · ' + esc(it.sub) : ''}</option>`).join('');
+    const idx = cur ? items.indexOf(cur) : -1;
+    sx.innerHTML = (idx < 0 ? `<option value="" selected>${cur ? esc(cur.label) : 'Choose an image'}</option>` : '') + opts;
+    if (idx >= 0) sx.value = String(idx);
+    sx.classList.toggle('hidden', daily); dx.classList.toggle('hidden', !daily); if (daily && cur) dx.value = cur.date;
+  }
 }
 function setSide(s) { side = s; $$('.sides button', root).forEach(b => b.classList.toggle('on', b.dataset.side === s)); }
 
@@ -255,8 +276,13 @@ export default {
       <div class="sec">
         <h2>This spot over time</h2>
         <div class="row" style="margin-bottom:8px"><select class="btn modeSel" aria-label="Interval"></select><span class="grow"></span>
-          <button class="btn" data-act="play">▶ Time-lapse</button><button class="btn" data-act="compare">Compare</button></div>
-        <div class="row sides hidden" style="margin-bottom:8px"><span class="small muted">Tap a picture to set the</span><div class="seg"><button data-side="left">Left side</button><button data-side="right">Right side</button></div></div>
+          <button class="btn" data-act="play">▶ Time-lapse</button><button class="btn" data-act="compare">Compare dates</button></div>
+        <div class="cmp hidden" role="group" aria-label="Compare two dates">
+          <label class="cmp-row"><span class="cmp-k">Before</span><select class="btn cmpSel" data-side="left" aria-label="Before image"></select><input type="date" class="btn cmpDate" data-side="left" aria-label="Before date"></label>
+          <label class="cmp-row"><span class="cmp-k">After</span><select class="btn cmpSel" data-side="right" aria-label="After image"></select><input type="date" class="btn cmpDate" data-side="right" aria-label="After date"></label>
+          <div class="row cmp-tap"><span class="small muted">Tapping a picture below sets</span><div class="seg sides"><button data-side="left">Before</button><button data-side="right">After</button></div></div>
+          <p class="note" style="margin:0">Drag the line on the map to slide between them. Before is on the left.</p>
+        </div>
         <div class="strip hscroll"></div>
         <p class="strip-note note" style="margin:6px 0 0"></p>
       </div>
@@ -272,6 +298,8 @@ export default {
     q('[data-act=play]').onclick = play;
     q('[data-act=compare]').onclick = () => toggleCompare();
     $$('.sides button', el).forEach(b => b.onclick = () => setSide(b.dataset.side));
+    $$('.cmpSel', el).forEach(x => x.onchange = () => { const it = items[+x.value]; if (it) setCmp(x.dataset.side, it); });
+    $$('.cmpDate', el).forEach(x => { x.max = today(); x.min = '2000-02-24'; x.onchange = () => { if (x.value) setCmp(x.dataset.side, dayItem(x.value)); }; });
     map.on('zoomend', () => { if (state.lens === 'imagery') zoomBanner(); });
     on('date', s => { if (root && q('.dateIn')) q('.dateIn').value = s.date; });
     const u = readUrl(); src = SOURCES[u.src] ? u.src : 'daily';
