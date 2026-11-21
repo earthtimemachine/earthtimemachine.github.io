@@ -89,11 +89,98 @@ export function polityInfo(name, hint = '') {
 async function toggleInfo(ev, open) {
   const box = ev.querySelector('.more'); if (box.innerHTML && !open) { box.innerHTML = ''; return; } if (box.innerHTML) return;
   box.innerHTML = '<div class="info"><span class="muted small">Loading details…</span></div>';
-  const i = await polityInfo(ev.dataset.name, 'kingdom empire dynasty history');
+  const i = ev.closest('.loc') ? await polityInfo(ev.dataset.name, '') : await polityInfo(ev.dataset.name, 'kingdom empire dynasty history');
   if (!i) { box.innerHTML = `<div class="info"><span class="muted small">No encyclopedia entry found. <a href="https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(ev.dataset.name)}" target="_blank" rel="noopener">Search Wikipedia</a></span></div>`; return; }
   box.innerHTML = `<div class="info">${i.thumb ? `<img src="${esc(i.thumb)}" alt="" loading="lazy">` : ''}<div><b>${esc(i.title)}</b>
     ${i.facts.length ? `<dl class="kv">${i.facts.map(f => `<dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd>`).join('')}</dl>` : ''}
     <p class="note" style="margin:6px 0 4px">${esc((i.extract || '').slice(0, 300))}${(i.extract || '').length > 300 ? '…' : ''}</p>${i.url ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">Read on Wikipedia</a>` : ''}</div></div>`;
+}
+
+/* ---------- local kingdoms from the encyclopedia ---------- */
+const WP = 'https://en.wikipedia.org/w/api.php?format=json&formatversion=2&origin=*&redirects=1&';
+const POLITY = /\b(dynasty|dynasties|empire|sultanate|kingdom|nayakas?|nayaks|chalukyas?|cholas?|pallavas?|rashtrakutas?|satavahanas?|ikshvakus?|vishnukundinas?|kakatiyas?|hoysalas?|yadavas?|marathas?|nizams?|raj|presidency|confederacy|caliphate|khanate|shogunate|principality|duchy|sultans|rulers|princely state|hyderabad state|company rule)\b/i;
+const NOT_POLITY = /^(list of|history of|outline of|timeline of|culture of|economy of|government of|politics of)|\b(university|college|school|temple|fort|airport|railway|station|district|mandal|constituency|cricket|film|award|road|highway|river|museum|architecture|art|literature|language|script|inscription|coin|coinage|army|war of|battle of|siege of)\b/i;
+const SEC = /histor|ancient|medieval|kingdom|dynast|rule|period|era|early|origin|etymolog/i;
+async function wpTitle(q) { try { const j = await getJSON(`${WP}action=query&list=search&srlimit=1&srsearch=${encodeURIComponent(q)}`, { ttl: 864e5 }); return j.query?.search?.[0]?.title || null; } catch (e) { return null; } }
+async function historyLinks(title, whole) {
+  const links = new Set(), add = arr => (arr || []).forEach(l => { const t = l.title || l['*']; if ((l.ns ?? 0) === 0 && t && (l.exists ?? true) !== false) links.add(t); });
+  if (whole) { try { const j = await getJSON(`${WP}action=parse&prop=links&page=${encodeURIComponent(title)}`, { ttl: 864e5 }); add(j.parse?.links); } catch (e) {} return links; }
+  let secs = [];
+  try { const j = await getJSON(`${WP}action=parse&prop=sections&page=${encodeURIComponent(title)}`, { ttl: 864e5 }); secs = j.parse?.sections || []; } catch (e) { return links; }
+  const tops = secs.filter(x => x.toclevel === 1 && SEC.test(x.line)).map(x => x.number);
+  const pick = secs.filter(x => tops.some(n => x.number === n || x.number.startsWith(n + '.'))).slice(0, 8).map(x => x.index);
+  const lead = await getJSON(`${WP}action=parse&prop=links&section=0&page=${encodeURIComponent(title)}`, { ttl: 864e5 }).catch(() => null); add(lead?.parse?.links);
+  await pool(pick, 3, async i => { try { const j = await getJSON(`${WP}action=parse&prop=links&section=${i}&page=${encodeURIComponent(title)}`, { ttl: 864e5 }); add(j.parse?.links); } catch (e) {} });
+  return links;
+}
+const yr = t => { const m = /^([+-])(\d+)-/.exec(t || ''); return m ? (m[1] === '-' ? -m[2] : +m[2]) : null; };
+function yearsFromText(t) {
+  if (!t) return null;
+  let m = /(?:c\.\s*)?(\d{1,4})\s*(BCE|BC)?\s*[–-]\s*(?:c\.\s*)?(\d{1,4})\s*(CE|AD|BCE|BC)?/.exec(t);
+  if (m) { let a = +m[1], b = +m[3]; const bce2 = /B/.test(m[4] || ''), bce1 = /B/.test(m[2] || '') || (bce2 && a > b); if (bce1) a = -a; if (bce2) b = -b; if (a < b + 1 || bce1) return [a, b]; }
+  m = /(\d{1,2})(?:st|nd|rd|th)\s*(?:century)?\s*(BCE|BC)?\s*(?:[–-]|to)\s*(\d{1,2})(?:st|nd|rd|th)\s*century\s*(BCE|BC)?/i.exec(t);
+  if (m) { const s1 = /B/.test(m[2] || m[4] || '') ? -1 : 1, s2 = /B/.test(m[4] || '') ? -1 : 1; return s1 < 0 ? [-(+m[1]) * 100, s2 < 0 ? -(+m[3] - 1) * 100 : (+m[3]) * 100] : [(+m[1] - 1) * 100, (+m[3]) * 100]; }
+  m = /(\d{1,2})(?:st|nd|rd|th)[\s-]century/i.exec(t); if (m) return [(+m[1] - 1) * 100, +m[1] * 100];
+  return null;
+}
+export async function localRulers(place) {
+  const a = place.admin || {}, name = a.local || place.name, out = new Map();
+  const pages = [];
+  const tLocal = name && await wpTitle(`${name} ${a.state || ''} ${a.country || ''}`.trim());
+  if (tLocal) pages.push([tLocal, 'town', false]);
+  const dName = a.district && a.district.replace(/\s+district$/i, '');
+  const tDist = dName && await wpTitle(`${dName} district ${a.state || ''}`.trim());
+  if (tDist && tDist !== tLocal) pages.push([tDist, 'district', false]);
+  if (a.state) { const tHist = await wpTitle(`History of ${a.state}`); if (tHist && /^History of/i.test(tHist)) pages.push([tHist, 'region', true]); else { const tS = await wpTitle(`${a.state} ${a.country || ''}`); if (tS) pages.push([tS, 'region', false]); } }
+  const skip = new RegExp(`^(${[a.country, a.state, a.district, name].filter(Boolean).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`, 'i');
+  for (const [t, lvl, whole] of pages) {
+    const links = await historyLinks(t, whole);
+    links.forEach(l => { if (!POLITY.test(l) || NOT_POLITY.test(l) || skip.test(l)) return; const e = out.get(l) || { title: l, from: [] }; if (!e.from.some(f => f[0] === t)) e.from.push([t, lvl]); out.set(l, e); });
+  }
+  let list = [...out.values()];
+  const rank = e => e.from.reduce((s, f) => s + (f[1] === 'town' ? 6 : f[1] === 'district' ? 3 : 1), 0);
+  list.sort((x, y) => rank(y) - rank(x)); list = list.slice(0, 40);
+  // dates and short descriptions, in batches
+  for (let i = 0; i < list.length; i += 20) {
+    const batch = list.slice(i, i + 20);
+    try { const j = await getJSON(`${WP}action=query&prop=pageprops|description&ppprop=wikibase_item&titles=${encodeURIComponent(batch.map(b => b.title).join('|'))}`, { ttl: 864e5 });
+      const norm = {}; (j.query?.redirects || []).concat(j.query?.normalized || []).forEach(r => norm[r.from] = r.to);
+      (j.query?.pages || []).forEach(pg => { batch.filter(b => (norm[b.title] || b.title) === pg.title).forEach(b => { b.real = pg.title; b.desc = pg.description || ''; b.qid = pg.pageprops?.wikibase_item; b.missing = pg.missing; }); });
+    } catch (e) {}
+  }
+  const ids = list.map(b => b.qid).filter(Boolean);
+  for (let i = 0; i < ids.length; i += 40) {
+    try { const e = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&props=claims&format=json&origin=*&ids=${ids.slice(i, i + 40).join('|')}`, { ttl: 864e5 });
+      list.forEach(b => { const c = e.entities?.[b.qid]?.claims; if (!c) return; const g = p => yr(c[p]?.[0]?.mainsnak?.datavalue?.value?.time);
+        const inst = (c.P31 || []).map(x => x.mainsnak?.datavalue?.value?.id); b.isPolity = inst.some(q => ['Q3024240', 'Q164950', 'Q417175', 'Q48349', 'Q1250464', 'Q28171280', 'Q417175', 'Q133442', 'Q1520223', 'Q6256', 'Q7275', 'Q3624078', 'Q1763527', 'Q15642541', 'Q11514315'].includes(q));
+        b.y0 = g('P571') ?? g('P580'); b.y1 = g('P576') ?? g('P582'); });
+    } catch (e) {}
+  }
+  list.forEach(b => { if (b.y0 == null) { const t = yearsFromText(b.desc); if (t) { b.y0 = t[0]; b.y1 = b.y1 ?? t[1]; b.approx = true; } } });
+  // keep entries that look like ruling houses or states and lived before modern times
+  const merged = new Map();
+  list.filter(b => !b.missing && (b.isPolity || /dynasty|empire|sultanate|kingdom|nayak|state|raj|rule|presidency/i.test((b.real || b.title) + ' ' + b.desc)) && !(b.y0 != null && b.y0 > 1956))
+    .forEach(b => { const k = b.real || b.title; const m = merged.get(k); if (m) b.from.forEach(f => { if (!m.from.some(x => x[0] === f[0])) m.from.push(f); }); else merged.set(k, { ...b, title: k }); });
+  list = [...merged.values()].filter(b => b.y0 != null || rank(b) >= 3).slice(0, 16);
+  list.sort((x, y) => (y.y0 ?? -1e9) - (x.y0 ?? -1e9));
+  return { list, pages };
+}
+async function buildLocal() {
+  const my = gen, box = q('.loc');
+  if (!state.place?.admin) { box.innerHTML = '<p class="muted small">Waiting for the place name…</p>'; return; }
+  box.innerHTML = '<p class="muted small">Reading the history of this town, its district and region…</p>';
+  let r; try { r = await localRulers(state.place); } catch (e) { r = null; }
+  if (my !== gen) return;
+  if (!r || !r.list.length) { box.innerHTML = '<p class="muted small">No kingdoms or dynasties are named in the encyclopedia articles for this place. The world-map timeline below still applies.</p>'; return; }
+  const lv = { town: 'this town', district: 'the district', region: 'the region' };
+  box.innerHTML = r.list.map(b => { const where = b.from.sort((x, y) => ['town', 'district', 'region'].indexOf(x[1]) - ['town', 'district', 'region'].indexOf(y[1])).map(f => lv[f[1]]);
+    const yrs = b.y0 != null ? `${b.approx ? 'c. ' : ''}${fmtYear(b.y0)} – ${b.y1 != null ? fmtYear(b.y1) : '?'}` : 'dates unknown';
+    const strong = b.from.some(f => f[1] !== 'region');
+    return `<div class="ev${strong ? '' : ' faint'}${b.from.some(f => f[1] === 'town') ? ' town' : ''}" data-name="${esc(b.title)}" data-y="${b.y0 ?? ''}" style="--c:hsl(${hue(b.title)},55%,58%)"><div class="yr">${yrs}</div>
+      <div class="nm" role="button" tabindex="0">${esc(b.title)}</div><div class="sub">${b.from.some(f => f[1] === 'town') ? '<b style="color:var(--ochre)">In this town\'s own history</b> · ' : ''}Named in the history of ${[...new Set(where)].join(', ')}</div><div class="more"></div></div>`; }).join('')
+    + `<p class="note" style="margin:8px 0 0">From the History sections of ${r.pages.map(p => `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent(p[0].replace(/ /g, '_'))}" target="_blank" rel="noopener">${esc(p[0])}</a>`).join(', ')} on Wikipedia, dated with Wikidata.</p>`;
+  $$('.ev .nm', box).forEach(el => { const go = () => { const ev = el.parentElement, y = +ev.dataset.y; if (ev.dataset.y !== '') { let k = 0; YEARS.forEach((v, i) => { if (Math.abs(v - (y + 30)) < Math.abs(YEARS[k] - (y + 30))) k = i; }); showEra(k); } toggleInfo(ev); }; el.onclick = go; el.onkeydown = e => { if (e.key === 'Enter') go(); }; });
+  const evs = $$('.ev', box), first = evs.find(ev => ev.classList.contains('town')) || evs.find(ev => !ev.classList.contains('faint')); if (first) toggleInfo(first, true);
 }
 
 /* ---------- today ---------- */
@@ -150,7 +237,8 @@ export default {
         <div class="row"><button class="btn" data-act="prev" aria-label="Earlier">‹</button><b class="eraLbl" style="min-width:86px;color:var(--ochre);font-family:var(--display)"></b>
           <input type="range" class="era grow" min="0" max="${YEARS.length - 1}" step="1" aria-label="Year"><button class="btn" data-act="next" aria-label="Later">›</button><button class="btn" data-act="play" aria-label="Play through time">▶</button></div>
         <div class="eraWho small" style="margin-top:6px"></div></div>
-      <div class="sec"><h2>Who ruled here</h2><div class="tl"><p class="muted small">Pick a place to see its rulers from prehistory to today.</p></div></div>
+      <div class="sec"><h2>Local kingdoms and dynasties</h2><div class="loc"><p class="muted small">Pick a place to see the dynasties that ruled it.</p></div></div>
+      <div class="sec"><h2>Empires on the world map</h2><p class="note" style="margin:0 0 8px">Large states from historical world maps. Smaller regional kingdoms appear in the list above.</p><div class="tl"><p class="muted small">Pick a place to see its rulers from prehistory to today.</p></div></div>
       <div class="sec"><h2>Today</h2><div class="today"><span class="muted small">–</span></div></div>
       <div class="sec"><h2>Ground and deep time <label class="aside"><input type="checkbox" class="plTog" checked> plate edges</label></h2><div class="geo"><span class="muted small">–</span></div>
         <div class="chips mabtns" style="margin:10px 0 8px"></div><svg class="paleo" viewBox="0 0 360 180" style="width:100%;aspect-ratio:2/1;border-radius:10px;display:block"></svg><p class="note pinfo" style="margin-top:8px"></p></div>
@@ -165,7 +253,7 @@ export default {
   hide() { if (playT) play(); },
   update(place, why) {
     const k = place ? `${place.lat},${place.lng}` : 'none';
-    if (this._k !== k) { this._k = k; if (place) { buildTimeline(); renderGeo(); } }
-    if (place) renderToday();
+    if (this._k !== k) { this._k = k; this._lk = null; if (place) { buildTimeline(); renderGeo(); } }
+    if (place) { renderToday(); if (place.admin && this._lk !== k) { this._lk = k; buildLocal(); } else if (!place.admin) q('.loc').innerHTML = '<p class="muted small">Waiting for the place name…</p>'; }
   },
 };

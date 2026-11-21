@@ -206,3 +206,4 @@ input[type=range]{accent-color:var(--ochre)}
 .cmp-row .cmpDate{flex:1 1 auto;min-width:0}
 .cmp-tap{flex-wrap:wrap;gap:6px}
 .cmp .hidden{display:none}
+.ev.faint{opacity:.78}
