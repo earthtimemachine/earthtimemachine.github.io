@@ -11,6 +11,7 @@ Pick any place on Earth and see it from every side, on one map that stays put wh
 | Overview | Weather and air now, top alerts, latest Sentinel-2 pass, rulers through time, main crops, notable places, local headlines |
 | Imagery | NASA daily (VIIRS/MODIS), Sentinel-2 (10 m, since 2016), Esri Wayback aerial photos (since 2014), Landsat (since 1984). Swipe-compare and time-lapse |
 | Hazards | Cyclones (GDACS), IMD-style heat waves, heavy rain and flash floods, river floods (GloFAS), wildfires, air quality (CAMS), 16-day outlook |
+| Routes | Road route between two places (OSRM), detour vs straight line, estimated shortcut links with water, rail and road crossings, slope and villages served |
 | History | Who ruled the place across 2,000+ years with currency and capital, tectonic plate, the rock beneath, and where the land drifted (GPlates) |
 | Economy | Top crops, services, manufacturing, universities, mines and quarries |
 | Explore | Sights, restaurants (vegetarian filter) and places to stay |
@@ -31,4 +32,4 @@ No build step: plain ES modules served by GitHub Pages.
 
 ## Data sources
 
-NASA GIBS, Microsoft Planetary Computer, Esri World Imagery and Wayback, Open-Meteo (forecast, archive, flood, air quality, elevation), GDACS, historical-basemaps (GPL-3.0), PB2002 plates, Macrostrat, GPlates Web Service, Wikipedia and Wikidata, OpenStreetMap (Nominatim, Overpass), GDELT.
+NASA GIBS, Microsoft Planetary Computer, Esri World Imagery and Wayback, Open-Meteo (forecast, archive, flood, air quality, elevation), GDACS, historical-basemaps (GPL-3.0), PB2002 plates, Macrostrat, GPlates Web Service, Wikipedia and Wikidata, OpenStreetMap (Nominatim, Overpass), GDELT, OSRM (OpenStreetMap routing).

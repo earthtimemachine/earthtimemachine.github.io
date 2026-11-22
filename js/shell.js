@@ -8,10 +8,11 @@ import history from './lenses/history.js';
 import economy from './lenses/economy.js';
 import explore from './lenses/explore.js';
 import news from './lenses/news.js';
+import routes from './lenses/routes.js';
 
-const LENSES = [overview, imagery, hazards, history, economy, explore, news];
+const LENSES = [overview, imagery, hazards, routes, history, economy, explore, news];
 const byId = Object.fromEntries(LENSES.map(l => [l.id, l]));
-const ALIASES = { daily: 'imagery', hires: 'imagery', resources: 'economy', res: 'economy', haz: 'hazards', hist: 'history', exp: 'explore' };
+const ALIASES = { daily: 'imagery', hires: 'imagery', resources: 'economy', res: 'economy', haz: 'hazards', hist: 'history', exp: 'explore', route: 'routes', roads: 'routes' };
 
 /* ---------- tabs ---------- */
 const tabs = $('#lensTabs'), body = $('#panelBody');
