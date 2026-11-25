@@ -1,6 +1,7 @@
 // App shell: lens tabs, search, place header, mobile sheet, start-up.
 import { $, $$, esc, state, on, setLens, setPlace, setDate, readUrl, store, toast, getJSON, yesterday } from './core.js';
 import { map, setBase, showPin, showLensGroup, mapBanner, stopSwipe } from './map.js';
+import { attachSearch } from './search.js';
 import overview from './lenses/overview.js';
 import imagery from './lenses/imagery.js';
 import hazards from './lenses/hazards.js';
@@ -54,40 +55,13 @@ on('placeinfo', p => { drawPlace(); if (current) refreshLens(current); });
 
 /* ---------- search ---------- */
 const q = $('#q'), results = $('#results');
-let st;
-q.addEventListener('input', () => {
-  clearTimeout(st); const v = q.value.trim();
-  const m = v.match(/^\s*(-?\d+(\.\d+)?)\s*[, ]\s*(-?\d+(\.\d+)?)\s*$/);
-  if (m) return showResults([{ display_name: `${(+m[1]).toFixed(4)}, ${(+m[3]).toFixed(4)}`, lat: m[1], lon: m[3], coord: true }]);
-  if (v.length < 3) { results.classList.add('hidden'); return; }
-  st = setTimeout(async () => {
-    try { showResults(await getJSON('https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=en&q=' + encodeURIComponent(v), { ttl: 36e5 })); }
-    catch (e) { showResults([], 'Place search is not responding. Paste coordinates instead, like 17.38, 78.48.'); }
-  }, 350);
-});
-function showResults(list, msg) {
-  if (!list.length) { results.innerHTML = `<button type="button" disabled>${esc(msg || 'No places found. Try a nearby town or check the spelling.')}</button>`; results.classList.remove('hidden'); return; }
-  results.innerHTML = list.map((it, i) => { const parts = it.display_name.split(','); return `<button type="button" role="option" data-i="${i}">${esc(parts[0])}<small>${esc(parts.slice(1).join(',').trim())}</small></button>`; }).join('');
-  results.classList.remove('hidden');
-  $$('button[data-i]', results).forEach(b => b.onclick = () => {
-    const it = list[+b.dataset.i]; results.classList.add('hidden'); q.value = ''; q.blur();
-    const z = it.coord ? 13 : zoomFor(it);
-    map.setView([+it.lat, +it.lon], Math.max(map.getZoom() > z ? map.getZoom() : z, 4));
-    setPlace(+it.lat, +it.lon, it.coord ? '' : it.display_name.split(',')[0]);
-    sheet('half');
-  });
-}
-function zoomFor(it) { const t = it.type || '', c = it.class || ''; return /country/.test(t) ? 5 : /state|region/.test(t) ? 7 : /city|county|district/.test(t) ? 11 : c === 'boundary' ? 10 : 13; }
-q.addEventListener('keydown', e => {
-  const btns = $$('button[data-i]', results);
-  if (e.key === 'Enter' && btns[0]) btns[0].click();
-  if (e.key === 'ArrowDown' && btns[0]) { e.preventDefault(); btns[0].focus(); }
-  if (e.key === 'Escape') results.classList.add('hidden');
-});
-results.addEventListener('keydown', e => { const b = $$('button[data-i]', results), i = b.indexOf(document.activeElement);
-  if (e.key === 'ArrowDown' && i < b.length - 1) { e.preventDefault(); b[i + 1].focus(); }
-  if (e.key === 'ArrowUp') { e.preventDefault(); i > 0 ? b[i - 1].focus() : q.focus(); }
-  if (e.key === 'Escape') { results.classList.add('hidden'); q.focus(); } });
+attachSearch(q, results, it => {
+  q.value = '';
+  const z = it.zoom || 13;
+  map.setView([+it.lat, +it.lng], Math.max(map.getZoom() > z ? map.getZoom() : z, 4));
+  setPlace(+it.lat, +it.lng, it.coord ? '' : it.name);
+  sheet('half');
+}, { near: () => { const c = map.getCenter(); return { lat: c.lat, lng: c.lng, z: map.getZoom() }; }, recent: () => store.get('etm-recent') || [] });
 document.addEventListener('click', e => { if (!e.target.closest('.search')) results.classList.add('hidden'); });
 
 $('#locate').onclick = () => {

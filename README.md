@@ -30,6 +30,10 @@ The place, map view and dates are shared across lenses and kept in the link, so 
 
 No build step: plain ES modules served by GitHub Pages.
 
+## Place search
+
+`js/search.js` powers every search box. By default it uses Photon (OpenStreetMap, search-as-you-type, typo-tolerant, biased to the map view) with Nominatim as fallback. To use Google's place search instead, put a Google Maps Platform key with **Places API (New)** enabled in `js/config.js`, restricted to the referrer `https://earthtimemachine.github.io/*`.
+
 ## Data sources
 
 NASA GIBS, Microsoft Planetary Computer, Esri World Imagery and Wayback, Open-Meteo (forecast, archive, flood, air quality, elevation), GDACS, historical-basemaps (GPL-3.0), PB2002 plates, Macrostrat, GPlates Web Service, Wikipedia and Wikidata, OpenStreetMap (Nominatim, Overpass), GDELT, OSRM (OpenStreetMap routing).

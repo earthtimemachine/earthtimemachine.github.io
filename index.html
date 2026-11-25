@@ -246,29 +246,7 @@ function drawRecent(cur){
   $('recent').querySelectorAll('button').forEach(b=> b.onclick=()=>{ const r=rec[+b.dataset.i]; choose({...r, z:12}); });
 }
 
-/* ---------- search ---------- */
-let t;
-$('q').addEventListener('input', e=>{
-  clearTimeout(t); const q=e.target.value.trim();
-  const m=q.match(/^\s*(-?\d+(\.\d+)?)\s*[, ]\s*(-?\d+(\.\d+)?)\s*$/);
-  if(m){ showResults([{display_name:`${(+m[1]).toFixed(4)}, ${(+m[3]).toFixed(4)}`, lat:m[1], lon:m[3]}]); return; }
-  if(q.length<3){ $('results').style.display='none'; return; }
-  t=setTimeout(async()=>{
-    try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=en&q='+encodeURIComponent(q)); showResults(await r.json()); }
-    catch(err){ $('status').textContent='Place search is not responding. Type coordinates instead, like 17.38, 78.48.'; }
-  },350);
-});
-function showResults(list){
-  const box=$('results');
-  if(!list.length){ box.innerHTML='<button type="button" disabled>No places found. Try a nearby town or check the spelling.</button>'; box.style.display='block'; return; }
-  box.innerHTML = list.map((it,i)=>{ const parts=it.display_name.split(','); return `<button type="button" role="option" data-i="${i}">${esc(parts[0])}<small>${esc(parts.slice(1).join(',').trim())}</small></button>`; }).join('');
-  box.style.display='block';
-  box.querySelectorAll('button[data-i]').forEach(b=> b.onclick=()=>{ const it=list[+b.dataset.i]; box.style.display='none'; const name=it.display_name.split(',')[0]; $('q').value=name; choose({name, lat:it.lat, lng:it.lon, z:12}, {open:true}); });
-}
-$('q').addEventListener('keydown', e=>{ if(e.key==='Enter'){ const f=$('results').querySelector('button[data-i]'); if(f) f.click(); } if(e.key==='ArrowDown'){ const f=$('results').querySelector('button[data-i]'); if(f){ e.preventDefault(); f.focus(); } } });
-$('results').addEventListener('keydown', e=>{ const b=[...$('results').querySelectorAll('button[data-i]')], i=b.indexOf(document.activeElement);
-  if(e.key==='ArrowDown' && i<b.length-1){ e.preventDefault(); b[i+1].focus(); } if(e.key==='ArrowUp'){ e.preventDefault(); i>0 ? b[i-1].focus() : $('q').focus(); } if(e.key==='Escape'){ $('results').style.display='none'; $('q').focus(); } });
-document.addEventListener('click', e=>{ if(!e.target.closest('.finder')) $('results').style.display='none'; });
+document.addEventListener('click', e=>{ if(!e.target.closest('.finder')) $('results').classList.add('hidden'); });
 
 /* ---------- my location ---------- */
 $('loc').onclick = ()=>{
@@ -291,5 +269,13 @@ document.querySelectorAll('.ex').forEach(b=> b.onclick=()=> choose({name:b.datas
   else drawRecent('');
 })();
 </script>
+<script type="module">
+import { attachSearch } from './js/search.js';
+const q = document.getElementById('q'), box = document.getElementById('results');
+box.classList.add('hidden');
+attachSearch(q, box, it => { q.value = it.name; choose({ name: it.name, lat: it.lat, lng: it.lng, z: it.zoom || 12 }, { open: true }); },
+  { recent: () => store.get('etm-recent') || [] });
+</script>
+<style>#results{display:block}#results.hidden,#results:empty{display:none}#results .sr-n em{font-style:normal;font-size:11px;opacity:.7;margin-left:6px;padding:1px 6px;border:1px solid currentColor;border-radius:999px}#results .sr-head,#results .sr-msg,#results .sr-foot{padding:10px 14px;font-size:13px;opacity:.75}#results .sr-foot{font-size:11px;text-align:right}</style>
 </body>
 </html>

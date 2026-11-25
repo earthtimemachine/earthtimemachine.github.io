@@ -231,3 +231,12 @@ input[type=range]{accent-color:var(--ochre)}
 .rt-cut-b .kv{margin-top:8px}
 .rt-out .facts{grid-template-columns:repeat(3,minmax(0,1fr))}
 .rt-out .fact .v{font-size:18px}
+
+/* search dropdown */
+#results .sr-n em{font-style:normal;font-size:11px;color:#58707e;margin-left:6px;padding:1px 6px;border:1px solid #b9cbd4;border-radius:999px;white-space:nowrap}
+.rt-res .sr-n em{font-style:normal;font-size:11px;color:var(--silt);margin-left:6px;padding:1px 6px;border:1px solid rgba(159,182,195,.35);border-radius:999px;white-space:nowrap}
+#results button small{display:block;color:#58707e;font-size:12px;margin-top:2px}
+.rt-res button small{display:block;color:var(--silt);font-size:12px;margin-top:2px}
+.sr-head,.sr-msg,.sr-foot{padding:10px 12px;font-size:13px;color:var(--silt)}
+#results .sr-head,#results .sr-msg,#results .sr-foot{color:#58707e}
+.sr-foot{font-size:11px;text-align:right;padding:6px 12px}

@@ -1,7 +1,8 @@
 // Routes lens: road routes between two places, and where a short new link road could cut the distance.
 // Routing: OSRM public server (OpenStreetMap roads). Checks: Overpass (rivers, railways, tanks, tracks, villages), Open-Meteo elevation.
-import { $, $$, esc, state, getJSON, overpass, km, fmtKm, toast, setPlace, setUrlParam, readUrl, sleep } from '../core.js';
+import { $, $$, esc, state, getJSON, overpass, km, fmtKm, toast, setPlace, setUrlParam, readUrl, store } from '../core.js';
 import { map, lensGroup, setClickHandler } from '../map.js';
+import { attachSearch } from '../search.js';
 
 const ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 17c5 0 2-6 6-8.5M15.6 7.4" /><path d="M6 15.8V12a3 3 0 0 1 3-3h1.5" stroke-dasharray="2 2.4"/></svg>';
 const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
@@ -35,19 +36,11 @@ function drawFields() {
   }
   q('.rt-hint').textContent = pick ? `Tap the map to set ${pick === 'a' ? 'the start' : 'the destination'}.` : (!A || !B ? 'Search two places, or tap ⌖ and then the map.' : '');
 }
-let sT;
 function wireSearch(inp) {
   const w = inp.dataset.w, box = q(`.rt-res[data-w="${w}"]`);
-  inp.oninput = () => { clearTimeout(sT); const v = inp.value.trim(); if (v.length < 3) { box.innerHTML = ''; return; }
-    sT = setTimeout(async () => {
-      const m = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(v);
-      if (m) { box.innerHTML = `<button type="button" data-lat="${m[1]}" data-lng="${m[2]}">${esc(v)}</button>`; }
-      else { try { const cc = state.place?.admin?.countryCode; const j = await getJSON(`https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=en&q=${encodeURIComponent(v)}${cc ? '&countrycodes=' + cc : ''}`, { ttl: 864e5 });
-        box.innerHTML = (j || []).map(r => `<button type="button" data-lat="${r.lat}" data-lng="${r.lon}" data-n="${esc(r.display_name.split(',')[0])}">${esc(r.display_name.split(',').slice(0, 3).join(','))}</button>`).join('') || '<span class="muted small">No match</span>'; } catch (e) { box.innerHTML = '<span class="muted small">Search is busy. Try again.</span>'; } }
-      $$('button', box).forEach(b => b.onclick = () => { box.innerHTML = ''; inp.blur(); setPoint(w, { lat: b.dataset.lat, lng: b.dataset.lng }, b.dataset.n); });
-    }, 400); };
-  inp.onkeydown = e => { if (e.key === 'Enter') { const b = $('button', box); if (b) b.click(); } };
-  inp.onblur = () => setTimeout(() => { box.innerHTML = ''; drawFields(); }, 250);
+  attachSearch(inp, box, it => setPoint(w, { lat: it.lat, lng: it.lng }, it.coord ? '' : it.name),
+    { near: () => { const c = map.getCenter(); return { lat: c.lat, lng: c.lng, z: map.getZoom() }; }, recent: () => store.get('etm-recent') || [] });
+  inp.addEventListener('blur', () => setTimeout(drawFields, 250));
 }
 
 /* ---------- routing ---------- */
